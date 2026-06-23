@@ -16,6 +16,23 @@ try {
   applyThemeClass('dark')
 }
 
+// SPA fallback recovery: si venimos de un 404.html que guardó la URL original
+// en sessionStorage, la restauramos antes de inicializar React Router.
+// Esto permite que rutas como /oauth/callback funcionen en GitHub Pages.
+try {
+  const redirectTarget = sessionStorage.getItem('spa-redirect')
+  if (redirectTarget) {
+    sessionStorage.removeItem('spa-redirect')
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+    const newPath = base + redirectTarget
+    if (window.location.pathname + window.location.search + window.location.hash !== newPath) {
+      window.history.replaceState(null, '', newPath)
+    }
+  }
+} catch {
+  /* sessionStorage no disponible, ignorar */
+}
+
 createRoot(document.getElementById('root')!).render(
   <QueryClientProvider client={queryClient}>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
