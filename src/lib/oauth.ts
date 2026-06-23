@@ -47,7 +47,7 @@ export async function completeLogin(code: string, state: string): Promise<OAuthT
     code_verifier: verifier,
   })
 
-  const res = await fetch(`${env.apiBase}/services/oauth2/token`, {
+  const res = await fetch(`${env.oauthBase}/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
@@ -71,7 +71,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<OAuthTok
     client_id: env.sfClientId,
   })
 
-  const res = await fetch(`${env.apiBase}/services/oauth2/token`, {
+  const res = await fetch(`${env.oauthBase}/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
@@ -87,7 +87,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<OAuthTok
 
 export async function revokeToken(token: string): Promise<void> {
   const body = new URLSearchParams({ token })
-  await fetch(`${env.apiBase}/services/oauth2/revoke`, {
+  await fetch(`${env.oauthBase}/revoke`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,

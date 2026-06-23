@@ -85,10 +85,22 @@ export async function forceRefresh(): Promise<string | null> {
 }
 
 export async function fetchIdentity(tokens: OAuthTokens): Promise<UserIdentity> {
-  const proxiedId = tokens.id.replace(/^https?:\/\/[^/]+/, env.apiBase)
-  const res = await fetch(proxiedId, {
-    headers: { Authorization: `Bearer ${tokens.access_token}` },
-  })
+  // El `tokens.id` viene con URL absoluta tipo https://<org>.my.salesforce.com/id/<orgId>/<userId>.
+  // - Dev: reemplazamos el origen por /sf-api para que Vite lo proxee
+  // - Prod: lo enviamos al Worker /api/sf/userinfo, que lo tuneliza con el Authorization header
+  const isDev = import.meta.env.DEV
+  let res: Response
+  if (isDev) {
+    const proxiedId = tokens.id.replace(/^https?:\/\/[^/]+/, env.apiBase)
+    res = await fetch(proxiedId, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    })
+  } else {
+    const url = `${env.mcpProxyBase}/api/sf/userinfo?url=${encodeURIComponent(tokens.id)}`
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    })
+  }
   if (!res.ok) throw new Error(`Identity endpoint falló: ${res.status}`)
   const data = await res.json()
   return {

@@ -1,14 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
+import { env } from '@/lib/env'
 
 /**
- * Hooks para consumir el MCP proxy local (Worker en :8787) que a su vez
- * habla con Data Cloud y devuelve transacciones de tarjetas reales.
- *
- * Apunta al Worker local en dev. Para deploy a producción se podría
- * mover a una env var, pero para la demo lo dejamos hardcoded.
+ * Hooks para consumir el BFF Worker (en dev :8787, en prod en Cloudflare)
+ * que a su vez habla con Data Cloud y devuelve transacciones de tarjetas reales.
  */
 
-const MCP_PROXY_BASE = 'http://localhost:8787'
+const MCP_PROXY_BASE = env.mcpProxyBase
 
 // Patricio Mendez en el SDO de banking. RUT registrado en Data Cloud.
 export const PATRICIO_RUT = '123456778-7'
