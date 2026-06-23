@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Headless 360 · Cumulus Bank Demo</title>
+    <!--
+      SPA fallback para GitHub Pages.
+
+      GitHub Pages devuelve este archivo cuando no encuentra el path solicitado.
+      Para que React Router pueda manejar rutas como /oauth/callback, /home,
+      /customer/:id, etc., reescribimos la URL al index.html del SPA
+      preservando el path + query string en sessionStorage para que la app
+      pueda restaurarlos al cargar.
+
+      Patrón estándar: https://github.com/rafgraph/spa-github-pages
+    -->
+    <script>
+      (function () {
+        var basePath = '/headless-360-demo'
+        var loc = window.location
+        var path = loc.pathname
+        var search = loc.search
+        var hash = loc.hash
+
+        // Guardamos la URL solicitada para que el SPA la restaure en el primer load
+        sessionStorage.setItem(
+          'spa-redirect',
+          path.replace(basePath, '') + search + hash || '/',
+        )
+
+        // Redirigimos al index.html del SPA (raíz del repo en Pages)
+        loc.replace(basePath + '/')
+      })()
+    </script>
+  </head>
+  <body>
+    <noscript>
+      Esta demo requiere JavaScript habilitado. Por favor activá JS en tu browser y volvé a intentar.
+    </noscript>
+  </body>
+</html>
