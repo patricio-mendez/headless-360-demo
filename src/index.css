@@ -1,0 +1,228 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Base universal — chart colors and radius are theme-agnostic */
+  :root {
+    --radius: 1rem;
+    --chart-blue: 213 95% 60%;
+    --chart-orange: 20 96% 62%;
+    --chart-cyan: 186 80% 58%;
+    --chart-coral: 8 88% 65%;
+    --chart-violet: 268 80% 70%;
+    --chart-mint: 158 70% 55%;
+    --soft-blue: 213 95% 90%;
+    --soft-pink: 348 90% 92%;
+    --soft-mint: 158 70% 90%;
+  }
+
+  /* DARK THEME — el original */
+  .theme-dark {
+    --background: 230 25% 11%;
+    --foreground: 220 20% 96%;
+    --card: 228 22% 14%;
+    --card-foreground: 220 20% 96%;
+    --sidebar: 230 28% 9%;
+    --primary: 213 95% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 230 18% 18%;
+    --secondary-foreground: 220 20% 96%;
+    --muted: 230 18% 18%;
+    --muted-foreground: 220 12% 65%;
+    --accent: 20 96% 62%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 8 88% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 228 18% 22%;
+    --input: 228 18% 22%;
+    --ring: 213 95% 60%;
+
+    /* Surface tones for utilities (overlays, hover, dividers) */
+    --surface-overlay: 255 255 255; /* white-based */
+    --surface-overlay-strength: 0.04;
+    --gradient-app:
+      radial-gradient(circle at 15% 20%, hsl(213 95% 55% / 0.08), transparent 40%),
+      radial-gradient(circle at 85% 75%, hsl(20 96% 62% / 0.06), transparent 40%);
+  }
+
+  /* LIGHT THEME — limpio, banca premium */
+  .theme-light {
+    --background: 220 30% 97%;
+    --foreground: 222 47% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 12%;
+    --sidebar: 220 30% 99%;
+    --primary: 213 95% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 25% 94%;
+    --secondary-foreground: 222 47% 12%;
+    --muted: 220 25% 94%;
+    --muted-foreground: 222 15% 42%;
+    --accent: 20 96% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 8 88% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 213 95% 48%;
+
+    --surface-overlay: 15 23 42; /* slate-900 */
+    --surface-overlay-strength: 0.04;
+    --gradient-app:
+      radial-gradient(circle at 15% 20%, hsl(213 95% 70% / 0.18), transparent 40%),
+      radial-gradient(circle at 85% 75%, hsl(20 96% 70% / 0.12), transparent 40%);
+  }
+
+  /* PREMIUM THEME — Dark base con degradé radial fuerte estilo LoginPage */
+  .theme-premium {
+    --background: 230 25% 11%;
+    --foreground: 220 20% 96%;
+    --card: 228 22% 14%;
+    --card-foreground: 220 20% 96%;
+    --sidebar: 230 28% 9%;
+    --primary: 213 95% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 230 18% 18%;
+    --secondary-foreground: 220 20% 96%;
+    --muted: 230 18% 18%;
+    --muted-foreground: 220 12% 65%;
+    --accent: 20 96% 62%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 8 88% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 228 18% 22%;
+    --input: 228 18% 22%;
+    --ring: 213 95% 60%;
+
+    --surface-overlay: 255 255 255;
+    --surface-overlay-strength: 0.04;
+    /* Degradé radial diagonal intenso — premium ambient lighting */
+    --gradient-app:
+      radial-gradient(circle at 15% 20%, hsl(213 95% 55% / 0.45), transparent 50%),
+      radial-gradient(circle at 85% 75%, hsl(20 96% 62% / 0.40), transparent 50%);
+  }
+
+  /* OCEAN THEME — gama de azules con degradé sutil */
+  .theme-ocean {
+    --background: 215 60% 12%;
+    --foreground: 200 35% 96%;
+    --card: 213 50% 16%;
+    --card-foreground: 200 35% 96%;
+    --sidebar: 215 65% 9%;
+    --primary: 195 95% 60%;
+    --primary-foreground: 215 70% 10%;
+    --secondary: 213 45% 22%;
+    --secondary-foreground: 200 35% 96%;
+    --muted: 213 45% 22%;
+    --muted-foreground: 205 25% 70%;
+    --accent: 175 80% 55%;
+    --accent-foreground: 215 70% 10%;
+    --destructive: 8 88% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 213 40% 28%;
+    --input: 213 40% 28%;
+    --ring: 195 95% 60%;
+
+    --surface-overlay: 255 255 255;
+    --surface-overlay-strength: 0.05;
+    /* Degradé característico ocean: profundo abajo, cielo arriba */
+    --gradient-app:
+      linear-gradient(180deg, hsl(210 70% 18%) 0%, hsl(215 65% 12%) 45%, hsl(220 70% 8%) 100%),
+      radial-gradient(circle at 70% 10%, hsl(195 95% 50% / 0.18), transparent 50%),
+      radial-gradient(circle at 20% 90%, hsl(175 80% 45% / 0.15), transparent 50%);
+  }
+
+  * {
+    @apply border-border;
+  }
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    background-image: var(--gradient-app);
+    background-attachment: fixed;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl;
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(213 95% 70%) 0%, hsl(20 96% 70%) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .theme-ocean .gradient-text {
+    background: linear-gradient(135deg, hsl(195 95% 70%) 0%, hsl(175 80% 65%) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .theme-light .gradient-text {
+    background: linear-gradient(135deg, hsl(213 95% 50%) 0%, hsl(20 96% 55%) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.25);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg;
+  }
+
+  /* Surface tokens — work across all 3 themes.
+     Use these instead of bg-white/[0.04] etc. */
+  .surface-1 {
+    background-color: hsl(var(--secondary) / 0.5);
+  }
+  .surface-2 {
+    background-color: hsl(var(--secondary));
+  }
+  .surface-hover {
+    background-color: transparent;
+    transition: background-color 150ms ease;
+  }
+  .surface-hover:hover {
+    background-color: hsl(var(--secondary) / 0.5);
+  }
+  .surface-divider {
+    border-color: hsl(var(--border) / 0.6);
+  }
+  .surface-track {
+    background-color: hsl(var(--muted));
+  }
+
+  .stat-tile {
+    @apply rounded-2xl p-5 text-white shadow-xl;
+  }
+  .stat-tile-blue { background: linear-gradient(135deg, hsl(213 95% 55%), hsl(213 95% 45%)); }
+  .stat-tile-orange { background: linear-gradient(135deg, hsl(20 96% 62%), hsl(15 90% 55%)); }
+  .stat-tile-coral { background: linear-gradient(135deg, hsl(8 88% 65%), hsl(348 85% 60%)); }
+  .stat-tile-mint { background: linear-gradient(135deg, hsl(158 70% 55%), hsl(168 75% 45%)); }
+  .stat-tile-cyan { background: linear-gradient(135deg, hsl(186 80% 58%), hsl(196 85% 50%)); }
+  .stat-tile-violet { background: linear-gradient(135deg, hsl(268 80% 70%), hsl(258 75% 60%)); }
+}
