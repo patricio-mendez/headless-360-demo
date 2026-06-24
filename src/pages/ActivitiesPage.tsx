@@ -55,12 +55,16 @@ export function ActivitiesPage() {
   const { data: drawerTask } = useTaskById(taskDrawerId)
   const [eventDrawerId, setEventDrawerId] = useState<string | null>(null)
   const { data: drawerEvent } = useEventById(eventDrawerId)
+  // Toggle "Solo pendientes" — filtra tareas no completadas + eventos futuros.
+  const [onlyPending, setOnlyPending] = useState(false)
 
   const items = useMemo<TimelineItem[]>(() => {
     const list: TimelineItem[] = []
+    const nowMs = Date.now()
     if (tab === 'all' || tab === 'tasks') {
       tasks.forEach((t) => {
         if (!t.ActivityDate && !t.CreatedDate) return
+        if (onlyPending && t.Status === 'Completed') return
         list.push({
           id: t.Id,
           type: 'task',
@@ -75,6 +79,8 @@ export function ActivitiesPage() {
     }
     if (tab === 'all' || tab === 'events') {
       events.forEach((e) => {
+        const startMs = new Date(e.StartDateTime).getTime()
+        if (onlyPending && startMs < nowMs) return
         list.push({
           id: e.Id,
           type: 'event',
@@ -89,8 +95,9 @@ export function ActivitiesPage() {
       })
     }
     return list.sort((a, b) => b.date.getTime() - a.date.getTime())
-  }, [tasks, events, tab])
+  }, [tasks, events, tab, onlyPending])
 
+  // Counts globales (independientes del toggle) y counts filtrados (para mostrar adentro del pill).
   const counts = useMemo(
     () => ({
       all: tasks.length + events.length,
@@ -99,6 +106,14 @@ export function ActivitiesPage() {
     }),
     [tasks.length, events.length],
   )
+  const pendingCount = useMemo(() => {
+    const nowMs = Date.now()
+    const pendingTasks = tasks.filter((t) => t.Status !== 'Completed').length
+    const futureEvents = events.filter(
+      (e) => new Date(e.StartDateTime).getTime() >= nowMs,
+    ).length
+    return pendingTasks + futureEvents
+  }, [tasks, events])
 
   return (
     <AppShell>
@@ -116,11 +131,18 @@ export function ActivitiesPage() {
           </div>
         </header>
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-border">
-          <TabButton active={tab === 'all'} onClick={() => setTab('all')} label="Todas" count={counts.all} />
-          <TabButton active={tab === 'tasks'} onClick={() => setTab('tasks')} label="Tareas" count={counts.tasks} icon={CheckSquare} />
-          <TabButton active={tab === 'events'} onClick={() => setTab('events')} label="Eventos" count={counts.events} icon={CalendarIcon} />
+        {/* Tabs + toggle "Solo pendientes" */}
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border">
+          <div className="flex gap-1">
+            <TabButton active={tab === 'all'} onClick={() => setTab('all')} label="Todas" count={counts.all} />
+            <TabButton active={tab === 'tasks'} onClick={() => setTab('tasks')} label="Tareas" count={counts.tasks} icon={CheckSquare} />
+            <TabButton active={tab === 'events'} onClick={() => setTab('events')} label="Eventos" count={counts.events} icon={CalendarIcon} />
+          </div>
+          <PendingToggle
+            active={onlyPending}
+            count={pendingCount}
+            onToggle={() => setOnlyPending((v) => !v)}
+          />
         </div>
 
         {isLoading ? (
@@ -192,6 +214,59 @@ function TabButton({
         className={cn(
           'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
           active ? 'bg-chart-blue/15 text-chart-blue' : 'bg-secondary text-muted-foreground/80',
+        )}
+      >
+        {count}
+      </span>
+    </button>
+  )
+}
+
+/**
+ * Pill toggle "Solo pendientes" — al lado de los tabs.
+ * Tareas no completadas + eventos futuros. Persiste mientras navegás tabs.
+ */
+function PendingToggle({
+  active,
+  count,
+  onToggle,
+}: {
+  active: boolean
+  count: number
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={active}
+      onClick={onToggle}
+      className={cn(
+        'mb-2 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all',
+        active
+          ? 'border-chart-mint bg-chart-mint/15 text-chart-mint shadow-sm shadow-chart-mint/20'
+          : 'border-border bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground',
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          'relative flex h-3.5 w-6 items-center rounded-full transition-colors',
+          active ? 'bg-chart-mint' : 'bg-muted-foreground/30',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white transition-all',
+            active ? 'left-[12px]' : 'left-0.5',
+          )}
+        />
+      </span>
+      Solo pendientes
+      <span
+        className={cn(
+          'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+          active ? 'bg-chart-mint/25 text-chart-mint' : 'bg-secondary text-muted-foreground/80',
         )}
       >
         {count}
