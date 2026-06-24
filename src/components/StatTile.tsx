@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import type { ComponentType } from 'react'
 
@@ -10,6 +11,8 @@ interface StatTileProps {
   tone: 'blue' | 'orange' | 'coral' | 'cyan' | 'mint' | 'violet'
   /** Posición del tile en su grupo. Se usa para escalonar la animación de entrada. */
   index?: number
+  /** Si se pasa, el tile se vuelve clickable y navega a esa ruta. */
+  to?: string
 }
 
 /**
@@ -77,12 +80,14 @@ function useCountUp(value: string, durationMs = 800, delayMs = 0): string {
  *
  * Todo CSS puro + transform en GPU — sin librería de animación.
  */
-export function StatTile({ label, value, hint, icon: Icon, tone, index = 0 }: StatTileProps) {
+export function StatTile({ label, value, hint, icon: Icon, tone, index = 0, to }: StatTileProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
   // Cada tile entra escalonado: 0ms, 100ms, 200ms, 300ms, ...
   const enterDelayMs = index * 100
   // El count-up arranca cuando el tile ya está visible (después del pop).
   const animatedValue = useCountUp(value, 800, enterDelayMs + 200)
+  const isClickable = !!to
 
   const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = ref.current
@@ -123,9 +128,24 @@ export function StatTile({ label, value, hint, icon: Icon, tone, index = 0 }: St
       ref={ref}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
+      onClick={isClickable ? () => navigate(to!) : undefined}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                navigate(to!)
+              }
+            }
+          : undefined
+      }
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
       className={cn(
         'stat-tile group relative overflow-hidden animate-tile-pop transition-shadow duration-300 ease-out',
         'hover:shadow-2xl',
+        isClickable &&
+          'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
         map[tone],
       )}
       style={{

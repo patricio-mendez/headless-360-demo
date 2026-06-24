@@ -132,6 +132,7 @@ export function BankerHomePage() {
                 hint="Person Accounts asignados"
                 icon={Users}
                 tone="blue"
+                to="/clientes"
               />
               <StatTile
                 index={1}
@@ -140,6 +141,7 @@ export function BankerHomePage() {
                 hint={`${stats.data?.activeOpportunityCount ?? 0} oportunidades`}
                 icon={TrendingUp}
                 tone="orange"
+                to="/oportunidades"
               />
               <StatTile
                 index={2}
@@ -148,14 +150,16 @@ export function BankerHomePage() {
                 hint={`${stats.data?.highPriorityCases ?? 0} alta prioridad`}
                 icon={Headphones}
                 tone="coral"
+                to="/casos"
               />
               <StatTile
                 index={3}
-                label="Tasks pendientes"
+                label="Actividades"
                 value={stats.data ? String(stats.data.pendingTasks) : '—'}
-                hint={`de ${stats.data?.totalTasks ?? 0} totales`}
+                hint={`${stats.data?.totalTasks ?? 0} tareas en total`}
                 icon={Briefcase}
                 tone="violet"
+                to="/actividades"
               />
             </div>
 
