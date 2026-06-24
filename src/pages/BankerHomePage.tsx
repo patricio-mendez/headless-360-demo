@@ -154,9 +154,9 @@ export function BankerHomePage() {
               />
               <StatTile
                 index={3}
-                label="Actividades"
+                label="Tareas pendientes"
                 value={stats.data ? String(stats.data.pendingTasks) : '—'}
-                hint={`${stats.data?.totalTasks ?? 0} tareas en total`}
+                hint={`de ${stats.data?.totalTasks ?? 0} tareas asignadas`}
                 icon={Briefcase}
                 tone="violet"
                 to="/actividades"
