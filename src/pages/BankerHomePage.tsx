@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
+import { useAuthStore } from '@/store/auth'
 import { StatTile } from '@/components/StatTile'
 import { AgentforceChatPanel } from '@/components/AgentforceChatPanel'
 import {
@@ -58,6 +59,9 @@ export function BankerHomePage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const stats = useBookStats()
+  const identity = useAuthStore((s) => s.identity)
+  // Toma el primer token del displayName (ej. "Pablo Gomez" → "Pablo"). Si no hay identity todavía, fallback genérico.
+  const firstName = identity?.displayName?.trim().split(/\s+/)[0] ?? 'banker'
   const customers = useBankerCustomers()
   const customerIds = useMemo(() => (customers.data ?? []).map((c) => c.Id), [customers.data])
   const enrich = useCustomersEnrichment(customerIds)
@@ -96,7 +100,7 @@ export function BankerHomePage() {
                     Branch Dashboard
                   </div>
                   <h1 className="font-display text-3xl font-bold leading-tight">
-                    Hola, <span className="gradient-text">Pato</span>
+                    Hola, <span className="gradient-text">{firstName}</span>
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     Acá tenés el panorama de tu cartera. Click en cualquier cliente para abrir su vista 360°.
