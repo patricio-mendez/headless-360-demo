@@ -77,8 +77,8 @@ export function SalesCockpit() {
         <SummaryCell label="Closed" value={formatCurrency(summaryStats.closed)} />
         <SummaryCell label="Committed" value={formatCurrency(summaryStats.committed)} />
         <SummaryCell label="Quota Attainment" value={`${summaryStats.attainment.toFixed(2)}%`} />
-        <SummaryCell label="Avg Sales Cycle" value={`${summaryStats.avgCycle} days`} hint="(mock)" />
-        <SummaryCell label="Avg NPS" value={summaryStats.avgNps.toFixed(1)} hint="(mock)" />
+        <SummaryCell label="Avg Sales Cycle" value={`${summaryStats.avgCycle} days`} />
+        <SummaryCell label="Avg NPS" value={summaryStats.avgNps.toFixed(1)} />
       </div>
 
       {/* Top row: Forecast Funnel + Pipeline Over Time */}
@@ -123,8 +123,8 @@ export function CockpitSummaryStrip() {
       <SummaryCell label="Closed" value={formatCurrency(stats.closed)} />
       <SummaryCell label="Committed" value={formatCurrency(stats.committed)} />
       <SummaryCell label="Quota Attainment" value={`${stats.attainment.toFixed(2)}%`} />
-      <SummaryCell label="Avg Sales Cycle" value={`${stats.avgCycle} days`} hint="(mock)" />
-      <SummaryCell label="Avg NPS" value={stats.avgNps.toFixed(1)} hint="(mock)" />
+      <SummaryCell label="Avg Sales Cycle" value={`${stats.avgCycle} days`} />
+      <SummaryCell label="Avg NPS" value={stats.avgNps.toFixed(1)} />
     </div>
   )
 }
