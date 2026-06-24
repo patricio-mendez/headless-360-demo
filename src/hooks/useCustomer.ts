@@ -2,7 +2,15 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { soql } from '@/lib/sfClient'
 import { env } from '@/lib/env'
-import type { Case, FinancialAccount, Lead, Opportunity, PersonAccount, Task } from '@/types/salesforce'
+import type {
+  Case,
+  Event,
+  FinancialAccount,
+  Lead,
+  Opportunity,
+  PersonAccount,
+  Task,
+} from '@/types/salesforce'
 
 /** Lookup individual de una Opportunity por Id — usado al clickear cards del agente. */
 export function useOpportunityById(id: string | null) {
@@ -35,6 +43,42 @@ export function useCaseById(id: string | null) {
         FROM Case WHERE Id = '${id}'
       `
       const r = await soql<Case>(q)
+      return r.records[0] ?? null
+    },
+  })
+}
+
+/** Lookup individual de un Event por Id — usado al clickear cards del agente / timeline. */
+export function useEventById(id: string | null) {
+  return useQuery({
+    queryKey: ['event-by-id', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const q = `
+        SELECT Id, Subject, StartDateTime, EndDateTime, IsAllDayEvent, Location,
+               Description, Type, WhatId, What.Name, WhoId, Who.Name, Owner.Name,
+               CreatedDate, LastModifiedDate
+        FROM Event WHERE Id = '${id}'
+      `
+      const r = await soql<Event>(q)
+      return r.records[0] ?? null
+    },
+  })
+}
+
+/** Lookup individual de una Task por Id — usado al clickear cards del agente. */
+export function useTaskById(id: string | null) {
+  return useQuery({
+    queryKey: ['task-by-id', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const q = `
+        SELECT Id, Subject, Status, Priority, Type, ActivityDate, Description,
+               WhatId, What.Name, WhoId, Who.Name, Owner.Name, IsClosed,
+               CreatedDate, LastModifiedDate, CompletedDateTime
+        FROM Task WHERE Id = '${id}'
+      `
+      const r = await soql<Task>(q)
       return r.records[0] ?? null
     },
   })

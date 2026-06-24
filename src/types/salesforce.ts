@@ -62,12 +62,41 @@ export interface Case {
   LastModifiedDate?: string
 }
 
+export interface Event {
+  Id: string
+  Subject: string
+  StartDateTime: string
+  EndDateTime: string | null
+  IsAllDayEvent: boolean
+  Location?: string | null
+  Description?: string | null
+  Type?: string | null
+  WhatId?: string | null
+  WhoId?: string | null
+  What?: { Name?: string } | null
+  Who?: { Name?: string } | null
+  Owner?: { Name?: string } | null
+  CreatedDate?: string
+  LastModifiedDate?: string
+}
+
 export interface Task {
   Id: string
   Subject: string
-  ActivityDate: string
+  ActivityDate: string | null
   Status: string
   Priority: string
+  Description?: string | null
+  Type?: string | null
+  WhatId?: string | null
+  WhoId?: string | null
+  What?: { Name?: string } | null
+  Who?: { Name?: string } | null
+  Owner?: { Name?: string } | null
+  IsClosed?: boolean
+  CreatedDate?: string
+  LastModifiedDate?: string
+  CompletedDateTime?: string | null
 }
 
 export interface Lead {

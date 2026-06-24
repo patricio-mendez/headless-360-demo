@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Calendar, CheckCircle2, Phone, Mail, Clock } from 'lucide-react'
 import { PanelEmpty, PanelError, PanelLoading, InlineSpinner } from './PanelStates'
-import { useTasks } from '@/hooks/useCustomer'
+import { useTasks, useTaskById } from '@/hooks/useCustomer'
+import { TaskDetailDrawer } from './TaskDetailDrawer'
 import { formatDate } from '@/lib/utils'
 
 const statusIcon: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -29,9 +31,16 @@ export function ActivitiesPanel() {
   const { data, isLoading, isError, error, refetch, isFetching } = useTasks()
   const tasks = data ?? []
   const pending = tasks.filter((t) => t.Status !== 'Completed').length
+  const [drawerId, setDrawerId] = useState<string | null>(null)
+  const { data: drawerTask } = useTaskById(drawerId)
 
   return (
     <div className="rounded-2xl border border-border bg-card transition-colors hover:border-border/80">
+      <TaskDetailDrawer
+        task={drawerTask ?? null}
+        open={!!drawerId}
+        onOpenChange={(v) => !v && setDrawerId(null)}
+      />
       <div className="flex items-center justify-between border-b border-border p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-chart-violet/15 text-chart-violet">
@@ -59,7 +68,12 @@ export function ActivitiesPanel() {
             const KindIcon = kindFromSubject(t.Subject ?? '')
             const StatusIcon = statusIcon[t.Status] ?? Clock
             return (
-              <div key={t.Id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-secondary/40">
+              <button
+                key={t.Id}
+                type="button"
+                onClick={() => setDrawerId(t.Id)}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-secondary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-chart-blue/40"
+              >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/60 text-muted-foreground">
                   <KindIcon className="h-3.5 w-3.5" />
                 </div>
@@ -73,7 +87,7 @@ export function ActivitiesPanel() {
                   </div>
                 </div>
                 <StatusIcon className={`h-4 w-4 ${statusColor[t.Status] ?? 'text-muted-foreground'}`} />
-              </div>
+              </button>
             )
           })}
         </div>

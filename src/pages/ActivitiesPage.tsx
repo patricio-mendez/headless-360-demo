@@ -13,6 +13,9 @@ import {
 import { AppShell } from '@/components/AppShell'
 import { PanelLoading, PanelError } from '@/components/PanelStates'
 import { useBookActivities } from '@/hooks/useBookOfBusiness'
+import { useTaskById, useEventById } from '@/hooks/useCustomer'
+import { TaskDetailDrawer } from '@/components/TaskDetailDrawer'
+import { EventDetailDrawer } from '@/components/EventDetailDrawer'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -48,6 +51,10 @@ export function ActivitiesPage() {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
+  const [taskDrawerId, setTaskDrawerId] = useState<string | null>(null)
+  const { data: drawerTask } = useTaskById(taskDrawerId)
+  const [eventDrawerId, setEventDrawerId] = useState<string | null>(null)
+  const { data: drawerEvent } = useEventById(eventDrawerId)
 
   const items = useMemo<TimelineItem[]>(() => {
     const list: TimelineItem[] = []
@@ -125,11 +132,31 @@ export function ActivitiesPage() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr),minmax(0,1.4fr)]">
-            <Timeline items={items} />
-            <CalendarView items={items} cursor={cursor} onCursorChange={setCursor} />
+            <Timeline
+              items={items}
+              onTaskClick={setTaskDrawerId}
+              onEventClick={setEventDrawerId}
+            />
+            <CalendarView
+              items={items}
+              cursor={cursor}
+              onCursorChange={setCursor}
+              onTaskClick={setTaskDrawerId}
+              onEventClick={setEventDrawerId}
+            />
           </div>
         )}
       </div>
+      <TaskDetailDrawer
+        task={drawerTask ?? null}
+        open={!!taskDrawerId}
+        onOpenChange={(v) => !v && setTaskDrawerId(null)}
+      />
+      <EventDetailDrawer
+        event={drawerEvent ?? null}
+        open={!!eventDrawerId}
+        onOpenChange={(v) => !v && setEventDrawerId(null)}
+      />
     </AppShell>
   )
 }
@@ -175,7 +202,15 @@ function TabButton({
 
 /* ───────────────────────── Timeline ───────────────────────── */
 
-function Timeline({ items }: { items: TimelineItem[] }) {
+function Timeline({
+  items,
+  onTaskClick,
+  onEventClick,
+}: {
+  items: TimelineItem[]
+  onTaskClick: (id: string) => void
+  onEventClick: (id: string) => void
+}) {
   // Agrupar por mes (yyyy-mm).
   const grouped = useMemo(() => {
     const map = new Map<string, TimelineItem[]>()
@@ -217,7 +252,15 @@ function Timeline({ items }: { items: TimelineItem[] }) {
                       // (≈1.4s total) — el resto entra sin delay para no esperar eternamente.
                       const delay = Math.min(globalIdx, 36) * 40
                       globalIdx += 1
-                      return <TimelineRow key={it.id} item={it} delayMs={delay} />
+                      return (
+                        <TimelineRow
+                          key={it.id}
+                          item={it}
+                          delayMs={delay}
+                          onTaskClick={onTaskClick}
+                          onEventClick={onEventClick}
+                        />
+                      )
                     })}
                   </ul>
                 </div>
@@ -230,12 +273,29 @@ function Timeline({ items }: { items: TimelineItem[] }) {
   )
 }
 
-function TimelineRow({ item, delayMs = 0 }: { item: TimelineItem; delayMs?: number }) {
+function TimelineRow({
+  item,
+  delayMs = 0,
+  onTaskClick,
+  onEventClick,
+}: {
+  item: TimelineItem
+  delayMs?: number
+  onTaskClick: (id: string) => void
+  onEventClick: (id: string) => void
+}) {
   const isTask = item.type === 'task'
+  const isEvent = item.type === 'event'
   const isCompleted = item.status === 'Completed'
   const isHighPriority = item.priority === 'High'
   const isPast = item.date.getTime() < Date.now()
   const isFuture = !isPast
+  const handleClick = isTask
+    ? () => onTaskClick(item.id)
+    : isEvent
+      ? () => onEventClick(item.id)
+      : undefined
+  const isClickable = isTask || isEvent
 
   // Tono del marker: Event=naranja, Task completed=mint, Task pendiente=violeta, Task alta priority pendiente=coral
   const tone = isTask
@@ -254,7 +314,26 @@ function TimelineRow({ item, delayMs = 0 }: { item: TimelineItem; delayMs?: numb
     : 'bg-chart-orange'
 
   return (
-    <li className="relative flex gap-4 px-5 py-3 transition-colors hover:bg-secondary/40">
+    <li
+      onClick={handleClick}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleClick?.()
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        'relative flex gap-4 px-5 py-3 transition-colors hover:bg-secondary/40',
+        isClickable &&
+          'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chart-blue/40',
+      )}
+    >
       {/* Línea vertical conectora — se "dibuja" desde arriba al cargar */}
       <div
         className="absolute bottom-0 left-[33px] top-0 w-px origin-top animate-line-draw bg-border"
@@ -317,6 +396,7 @@ function TimelineRow({ item, delayMs = 0 }: { item: TimelineItem; delayMs?: numb
           {item.accountName && item.accountId && (
             <Link
               to={`/customer/${item.accountId}`}
+              onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center gap-1 hover:text-chart-blue hover:underline"
             >
               <Users className="h-3 w-3" />
@@ -348,10 +428,14 @@ function CalendarView({
   items,
   cursor,
   onCursorChange,
+  onTaskClick,
+  onEventClick,
 }: {
   items: TimelineItem[]
   cursor: Date
   onCursorChange: (d: Date) => void
+  onTaskClick: (id: string) => void
+  onEventClick: (id: string) => void
 }) {
   // Construir grilla 7x6 que comienza el domingo previo al primer día del mes.
   const cells = useMemo(() => {
@@ -471,7 +555,12 @@ function CalendarView({
               </div>
               <div className="mt-1 space-y-0.5">
                 {dayItems.slice(0, 3).map((it) => (
-                  <CalendarPill key={it.id} item={it} />
+                  <CalendarPill
+                    key={it.id}
+                    item={it}
+                    onTaskClick={onTaskClick}
+                    onEventClick={onEventClick}
+                  />
                 ))}
               </div>
             </div>
@@ -482,7 +571,15 @@ function CalendarView({
   )
 }
 
-function CalendarPill({ item }: { item: TimelineItem }) {
+function CalendarPill({
+  item,
+  onTaskClick,
+  onEventClick,
+}: {
+  item: TimelineItem
+  onTaskClick: (id: string) => void
+  onEventClick: (id: string) => void
+}) {
   const isTask = item.type === 'task'
   const isCompleted = item.status === 'Completed'
   const isHigh = item.priority === 'High'
@@ -497,25 +594,24 @@ function CalendarPill({ item }: { item: TimelineItem }) {
 
   const tooltip = `${item.subject}${item.accountName ? ' · ' + item.accountName : ''}`
 
-  const Body = (
-    <span
-      title={tooltip}
-      className={cn(
-        'block truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight transition-colors',
-        tone,
-      )}
-    >
-      {item.subject}
-    </span>
-  )
+  const handleClick = isTask ? () => onTaskClick(item.id) : () => onEventClick(item.id)
 
-  if (item.accountId) {
-    return (
-      <Link to={`/customer/${item.accountId}`} className="block">
-        {Body}
-      </Link>
-    )
-  }
-  return Body
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="block w-full text-left"
+    >
+      <span
+        title={tooltip}
+        className={cn(
+          'block truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight transition-colors',
+          tone,
+        )}
+      >
+        {item.subject}
+      </span>
+    </button>
+  )
 }
 

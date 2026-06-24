@@ -30,11 +30,13 @@ import {
   useCurrentAccountId,
   useOpportunityById,
   useCaseById,
+  useTaskById,
 } from '@/hooks/useCustomer'
 import { env } from '@/lib/env'
 import { DataTooltip } from './Tooltip'
 import { OpportunityDetailDrawer } from './OpportunityDetailDrawer'
 import { CaseDetailDrawer } from './CaseDetailDrawer'
+import { TaskDetailDrawer } from './TaskDetailDrawer'
 import { cn } from '@/lib/utils'
 
 /**
@@ -102,7 +104,7 @@ export function AgentforceChatPanel() {
   const [open, setOpen] = useState(false)
 
   // Drawer del record clickeado en una card del agente.
-  const [detailRef, setDetailRef] = useState<{ type: 'opportunity' | 'case'; id: string } | null>(
+  const [detailRef, setDetailRef] = useState<{ type: 'opportunity' | 'case' | 'task'; id: string } | null>(
     null,
   )
 
@@ -135,7 +137,8 @@ export function AgentforceChatPanel() {
   const handleOpenRecord = (apiName: string, id: string) => {
     if (apiName === 'Opportunity') setDetailRef({ type: 'opportunity', id })
     else if (apiName === 'Case') setDetailRef({ type: 'case', id })
-    // Otros sObjects (Account, Task, FinancialAccount) — por ahora no abren drawer.
+    else if (apiName === 'Task') setDetailRef({ type: 'task', id })
+    // Otros sObjects (Account, FinancialAccount) — por ahora no abren drawer.
   }
 
   return (
@@ -157,14 +160,16 @@ function RecordDetailHost({
   detailRef,
   onClose,
 }: {
-  detailRef: { type: 'opportunity' | 'case'; id: string } | null
+  detailRef: { type: 'opportunity' | 'case' | 'task'; id: string } | null
   onClose: () => void
 }) {
   const oppId = detailRef?.type === 'opportunity' ? detailRef.id : null
   const caseId = detailRef?.type === 'case' ? detailRef.id : null
+  const taskId = detailRef?.type === 'task' ? detailRef.id : null
 
   const { data: opportunity } = useOpportunityById(oppId)
   const { data: caseRecord } = useCaseById(caseId)
+  const { data: task } = useTaskById(taskId)
 
   return (
     <>
@@ -178,6 +183,13 @@ function RecordDetailHost({
       {detailRef?.type === 'case' && (
         <CaseDetailDrawer
           caseRecord={caseRecord ?? null}
+          open
+          onOpenChange={(v) => !v && onClose()}
+        />
+      )}
+      {detailRef?.type === 'task' && (
+        <TaskDetailDrawer
+          task={task ?? null}
           open
           onOpenChange={(v) => !v && onClose()}
         />
@@ -512,8 +524,11 @@ function RecordCard({
     .filter((f) => f.display)
     .slice(0, 4)
 
-  // Por ahora abrimos drawer solo para Opportunity y Case (los únicos que tienen drawer custom).
-  const isClickable = !!onOpenRecord && (apiName === 'Opportunity' || apiName === 'Case') && !!record.id
+  // Por ahora abrimos drawer solo para Opportunity, Case y Task (los únicos que tienen drawer custom).
+  const isClickable =
+    !!onOpenRecord &&
+    (apiName === 'Opportunity' || apiName === 'Case' || apiName === 'Task') &&
+    !!record.id
   const handleClick = () => {
     if (isClickable && apiName) onOpenRecord!(apiName, record.id)
   }
