@@ -214,7 +214,7 @@ function Fab({
   if (open) return null
 
   return (
-    <div className="fixed left-[128px] bottom-[140px] z-[60] -translate-x-1/2">
+    <div className="fixed left-[128px] bottom-[200px] z-[60] -translate-x-1/2">
       <button
         onClick={onClick}
         aria-label="¿Necesitas ayuda?"

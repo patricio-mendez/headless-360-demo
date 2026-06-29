@@ -10,6 +10,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { ThemePicker } from './ThemePicker'
+import { CountryToggle } from './CountryToggle'
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>
@@ -102,7 +103,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="space-y-1 border-t border-border p-3">
+      <div className="space-y-2 border-t border-border p-3">
+        <CountryToggle />
         <ThemePicker />
         <button
           onClick={handleLogout}

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
+import { MarketStrip } from '@/components/MarketStrip'
 import { useAuthStore } from '@/store/auth'
 import { StatTile } from '@/components/StatTile'
 import { AgentforceChatPanel } from '@/components/AgentforceChatPanel'
@@ -94,8 +95,8 @@ export function BankerHomePage() {
             <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-6">
               <div className="absolute inset-0 bg-gradient-to-r from-chart-blue/15 via-chart-violet/10 to-chart-orange/15" />
               <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-chart-blue/20 blur-3xl" />
-              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
+              <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="space-y-1 lg:max-w-md">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-chart-blue">
                     Branch Dashboard
                   </div>
@@ -106,17 +107,22 @@ export function BankerHomePage() {
                     Acá tenés el panorama de tu cartera. Click en cualquier cliente para abrir su vista 360°.
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-border bg-card/60 p-4 backdrop-blur-sm">
-                  <Trophy className="h-5 w-5 text-chart-orange" />
-                  <div className="leading-tight">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Closed Won YTD
-                    </div>
-                    <div className="font-display text-lg font-bold">
-                      {stats.data ? formatCurrency(stats.data.closedWonAmount) : '—'}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {stats.data?.closedWonCount ?? 0} negocios cerrados
+                <div className="flex flex-col gap-3 lg:flex-1 lg:flex-row lg:items-stretch lg:justify-end">
+                  <div className="lg:flex-1 lg:max-w-[520px]">
+                    <MarketStrip />
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-border bg-card/60 p-4 backdrop-blur-sm">
+                    <Trophy className="h-5 w-5 text-chart-orange" />
+                    <div className="leading-tight">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Closed Won YTD
+                      </div>
+                      <div className="font-display text-lg font-bold">
+                        {stats.data ? formatCurrency(stats.data.closedWonAmount) : '—'}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {stats.data?.closedWonCount ?? 0} negocios cerrados
+                      </div>
                     </div>
                   </div>
                 </div>
