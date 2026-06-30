@@ -48,20 +48,6 @@ const VISIBLE_CUSTOMER_ROWS = 5
 // Approx 60px per row + header + padding → vista de exactamente 5 filas, scroll para el resto
 const CUSTOMER_TABLE_MAX_HEIGHT = '380px'
 
-/** Clientes destacados al tope de la lista, en este orden exacto. */
-const PINNED_CUSTOMER_NAMES = [
-  'Patricio Mendez',
-  'Ana Silva',
-  'Juan Pérez',
-  'Pedro Muñoz',
-  'María González',
-]
-
-function pinnedRank(name: string): number {
-  const idx = PINNED_CUSTOMER_NAMES.indexOf(name)
-  return idx === -1 ? Number.POSITIVE_INFINITY : idx
-}
-
 export function BankerHomePage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
@@ -78,10 +64,17 @@ export function BankerHomePage() {
   const enrich = useCustomersEnrichment(customerIds)
 
   const filtered = useMemo(() => {
+    const enrichMap = enrich.data
     const list = [...(customers.data ?? [])].sort((a, b) => {
-      const aRank = pinnedRank(a.Name)
-      const bRank = pinnedRank(b.Name)
-      if (aRank !== bRank) return aRank - bRank
+      // 1. Patricio siempre primero (cliente estrella).
+      const aIsStar = a.Name?.toLowerCase().startsWith('patricio mendez') ?? false
+      const bIsStar = b.Name?.toLowerCase().startsWith('patricio mendez') ?? false
+      if (aIsStar !== bIsStar) return aIsStar ? -1 : 1
+      // 2. Pipeline desc (clientes con data completa arriba).
+      const aPipe = enrichMap?.get(a.Id)?.pipelineAmount ?? 0
+      const bPipe = enrichMap?.get(b.Id)?.pipelineAmount ?? 0
+      if (aPipe !== bPipe) return bPipe - aPipe
+      // 3. Alfabético.
       return a.Name.localeCompare(b.Name, 'es')
     })
     if (!search.trim()) return list
@@ -89,7 +82,7 @@ export function BankerHomePage() {
     return list.filter(
       (c) => c.Name.toLowerCase().includes(q) || c.PersonEmail?.toLowerCase().includes(q),
     )
-  }, [customers.data, search])
+  }, [customers.data, search, enrich.data])
 
   return (
     <div className="flex h-screen overflow-hidden">

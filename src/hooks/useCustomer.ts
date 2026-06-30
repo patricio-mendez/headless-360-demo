@@ -105,7 +105,9 @@ export function useAccount() {
       const q = `
         SELECT Id, Name, FirstName, LastName, IsPersonAccount, PersonEmail, PersonMobilePhone,
                PersonBirthdate, PersonContactId, BillingCity, BillingCountry, Owner.Name, CreatedDate,
-               Cust360_Contact_Picture_URL__pc
+               Cust360_Contact_Picture_URL__pc,
+               Cust360_Metric1__pc, Cust360_Metric2__pc, Cust360_Metric3__pc, Cust360_Metric4__pc,
+               Cust360_Purchase_Score__pc, Cust360_Engagement_Score__pc, Cust360_CSAT__pc, Cust360_ChurnRisk__pc
         FROM Account WHERE Id = '${accountId}'
       `
       const r = await soql<PersonAccount>(q)

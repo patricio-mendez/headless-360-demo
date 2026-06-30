@@ -19,7 +19,7 @@ import { DataTooltip } from './Tooltip'
 import { EmailComposerModal, NewOpportunityModal } from './ProfileActionsModals'
 import { useAccount } from '@/hooks/useCustomer'
 import { useAuthStore } from '@/store/auth'
-import { calculateAge, formatCurrency, formatDate, initials, maskedAccountId, cn } from '@/lib/utils'
+import { calculateAge, formatDate, initials, maskedAccountId, cn } from '@/lib/utils'
 import type { PersonAccount } from '@/types/salesforce'
 
 export function ProfileHeader() {
@@ -204,6 +204,32 @@ function ContactRow({
 }
 
 function InsightsCard() {
+  const { data: account } = useAccount()
+
+  // Lee los campos Cust360 del Account. Si no están poblados, fallback a defaults
+  // genéricos para que el card no se rompa visualmente.
+  const loyaltyTier = account?.Cust360_Metric1__pc ?? '—'
+  const segment = account?.Cust360_Metric2__pc ?? '—'
+  const ltvRaw = account?.Cust360_Metric3__pc ?? null
+  const propensityLabel = account?.Cust360_Metric4__pc ?? '—'
+  const purchaseScore = account?.Cust360_Purchase_Score__pc ?? 0
+  const engagementScore = account?.Cust360_Engagement_Score__pc ?? 0
+  const csat = account?.Cust360_CSAT__pc ?? null
+  const churnRisk = account?.Cust360_ChurnRisk__pc ?? null
+
+  // El LTV viene como string formateado ("$ 4.580.000") o vacío.
+  // Si tiene el "$" lo usamos tal cual; sino mostramos guion.
+  const ltvDisplay = ltvRaw && ltvRaw.trim() !== '' ? ltvRaw : '—'
+
+  // Status badge: si hay CSAT > 0 → Activo. Si churnRisk → en riesgo. Sino genérico.
+  const isActive = (csat ?? 0) > 0 && !churnRisk
+  const statusLabel = churnRisk ? '● En riesgo' : isActive ? '● Activo' : '● Sin datos'
+  const statusClass = churnRisk
+    ? 'border-chart-coral/30 bg-chart-coral/10 text-chart-coral'
+    : isActive
+      ? 'border-chart-mint/30 bg-chart-mint/10 text-chart-mint'
+      : 'border-border bg-secondary/30 text-muted-foreground'
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-colors hover:border-border/80">
       <div className="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-chart-violet/10 blur-3xl" />
@@ -217,12 +243,21 @@ function InsightsCard() {
             <h3 className="font-display text-base font-semibold">Perfil estratégico</h3>
           </div>
           <DataTooltip
-            title="Cliente activo"
-            description="Última transacción hace 3 días · Última sesión web hace 6 horas · WhatsApp activo"
-            source="Engagement Pipeline (mock — Data Cloud no conectado)"
+            title={churnRisk ? 'En riesgo' : 'Cliente activo'}
+            description={
+              churnRisk
+                ? `Risk of Churn: ${churnRisk}. Considerar acciones de retención.`
+                : `CSAT ${csat ?? '—'} · Engagement ${engagementScore}%`
+            }
+            source="Account · Cust360 fields"
           >
-            <span className="rounded-full border border-chart-mint/30 bg-chart-mint/10 px-2.5 py-0.5 text-[10px] font-medium text-chart-mint">
-              ● Activo
+            <span
+              className={cn(
+                'rounded-full border px-2.5 py-0.5 text-[10px] font-medium',
+                statusClass,
+              )}
+            >
+              {statusLabel}
             </span>
           </DataTooltip>
         </div>
@@ -232,24 +267,23 @@ function InsightsCard() {
             icon={Heart}
             tone="coral"
             label="Loyalty Tier"
-            value="Platinum"
+            value={loyaltyTier}
             tooltip={{
-              title: 'Loyalty Tier · Platinum',
+              title: `Loyalty Tier · ${loyaltyTier}`,
               description:
-                'Top 5% del banco. Calculado por LTV, antigüedad y productos contratados.',
-              source: 'Loyalty Management (mock)',
+                'Tier asignado al cliente según LTV, antigüedad y productos contratados.',
+              source: 'Account.Cust360_Metric1__pc',
             }}
           />
           <InsightItem
             icon={PieChart}
             tone="blue"
             label="Segment"
-            value="Private Banking"
+            value={segment}
             tooltip={{
-              title: 'Segmentación: Private Banking',
-              description:
-                'Segmento basado en patrimonio gestionado. Acceso a inversiones diversificadas y banker dedicado.',
-              source: 'Data Cloud · Segmentation (mock)',
+              title: `Segmentación: ${segment}`,
+              description: 'Segmento comercial basado en patrimonio gestionado y productos.',
+              source: 'Account.Cust360_Metric2__pc',
             }}
           />
         </div>
@@ -260,12 +294,12 @@ function InsightsCard() {
           icon={ShoppingCart}
           tone="orange"
           label="Lifetime Value"
-          value={formatCurrency(4580000)}
+          value={ltvDisplay}
           accent
           tooltip={{
-            title: 'Lifetime Value · CLP $4.580.000',
-            description: 'Suma de comisiones, intereses y fees generados desde 2022.',
-            source: 'Data Cloud · Revenue Attribution (mock)',
+            title: `Lifetime Value · ${ltvDisplay}`,
+            description: 'Valor estimado del cliente para el banco a lo largo de la relación.',
+            source: 'Account.Cust360_Metric3__pc',
           }}
         />
 
@@ -273,12 +307,12 @@ function InsightsCard() {
           icon={Atom}
           tone="mint"
           label="Propensity to Purchase"
-          valueLabel="Muy Alta"
-          progress={85}
+          valueLabel={propensityLabel}
+          progress={purchaseScore}
           tooltip={{
-            title: 'Propensity to Purchase · 85%',
-            description: 'Probabilidad de aceptar una oferta en próximos 90 días.',
-            source: 'Einstein Discovery (mock)',
+            title: `Propensity to Purchase · ${purchaseScore}%`,
+            description: `Probabilidad de aceptar una oferta en próximos 90 días (${propensityLabel}).`,
+            source: 'Account.Cust360_Purchase_Score__pc',
           }}
         />
 
@@ -286,12 +320,12 @@ function InsightsCard() {
           icon={Activity}
           tone="cyan"
           label="Engagement Score"
-          valueLabel="89%"
-          progress={89}
+          valueLabel={`${engagementScore}%`}
+          progress={engagementScore}
           tooltip={{
-            title: 'Engagement Score · 89%',
-            description: 'Score compuesto de interacciones cross-canal.',
-            source: 'Marketing Cloud (mock)',
+            title: `Engagement Score · ${engagementScore}%`,
+            description: 'Score compuesto de interacciones cross-canal (web, app, sucursal).',
+            source: 'Account.Cust360_Engagement_Score__pc',
           }}
         />
       </div>

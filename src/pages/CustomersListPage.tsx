@@ -7,11 +7,11 @@ import { useBankerCustomers, useCustomersEnrichment } from '@/hooks/useBookOfBus
 import { initials, formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
-const PINNED_NAMES = ['Patricio Mendez', 'Ana Silva', 'Juan Perez', 'Pedro Munoz', 'Maria Gonzalez']
+/** Patricio siempre primero (cliente estrella de la demo). El resto se ordena por pipeline desc. */
+const STAR_CLIENT_NAME = 'Patricio Mendez'
 
-function pinnedRank(name: string): number {
-  const idx = PINNED_NAMES.findIndex((p) => name?.toLowerCase().startsWith(p.toLowerCase()))
-  return idx === -1 ? 999 : idx
+function isStarClient(name: string): boolean {
+  return name?.toLowerCase().startsWith(STAR_CLIENT_NAME.toLowerCase()) ?? false
 }
 
 export function CustomersListPage() {
@@ -30,12 +30,18 @@ export function CustomersListPage() {
         )
       : customers
     return [...list].sort((a, b) => {
-      const ra = pinnedRank(a.Name)
-      const rb = pinnedRank(b.Name)
-      if (ra !== rb) return ra - rb
+      // 1. Patricio siempre primero.
+      const aIsStar = isStarClient(a.Name)
+      const bIsStar = isStarClient(b.Name)
+      if (aIsStar !== bIsStar) return aIsStar ? -1 : 1
+      // 2. Por pipeline desc (clientes "completos" arriba).
+      const aPipe = enrichments?.get(a.Id)?.pipelineAmount ?? 0
+      const bPipe = enrichments?.get(b.Id)?.pipelineAmount ?? 0
+      if (aPipe !== bPipe) return bPipe - aPipe
+      // 3. Alfabético como tiebreaker.
       return a.Name.localeCompare(b.Name)
     })
-  }, [customers, search])
+  }, [customers, search, enrichments])
 
   return (
     <AppShell>
@@ -85,7 +91,7 @@ export function CustomersListPage() {
               <tbody className="divide-y divide-border">
                 {filtered.map((c) => {
                   const enr = enrichments?.get(c.Id)
-                  const isPinned = pinnedRank(c.Name) < PINNED_NAMES.length
+                  const isPinned = isStarClient(c.Name)
                   return (
                     <tr key={c.Id} className="transition-colors hover:bg-secondary/40">
                       <td className="px-5 py-3">
