@@ -1,6 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { soql } from '@/lib/sfClient'
 import type { Opportunity } from '@/types/salesforce'
+import { useVerticalStore, type Vertical } from '@/store/vertical'
+
+/**
+ * Filtro SOQL para separar opps de banking de opps de insurance.
+ * Convención: las opps de insurance tienen Name LIKE 'Cotización Seguro%'.
+ * Las de banking son el resto (créditos, hipotecas, inversiones, etc).
+ */
+const INSURANCE_OPP_PREFIX = 'Cotización Seguro'
+function opportunityVerticalFilter(vertical: Vertical): string {
+  if (vertical === 'insurance') return `Name LIKE '${INSURANCE_OPP_PREFIX}%'`
+  return `(NOT Name LIKE '${INSURANCE_OPP_PREFIX}%')`
+}
 
 export interface CustomerListItem {
   Id: string
@@ -144,9 +156,11 @@ export function useBankerCustomers(limit = 200) {
 }
 
 export function useBookStats() {
+  const vertical = useVerticalStore((s) => s.vertical)
   return useQuery({
-    queryKey: ['banker-stats', BANKER_USER_ID],
+    queryKey: ['banker-stats', BANKER_USER_ID, vertical],
     queryFn: async (): Promise<BookStats> => {
+      const oppFilter = opportunityVerticalFilter(vertical)
       // Salesforce no soporta múltiples COUNT/SUM en un solo query con WHERE
       // usando aggregates por SObject distinto. Hacemos 4 queries en paralelo.
       const [accountsRes, oppsRes, casesRes, tasksRes] = await Promise.all([
@@ -154,7 +168,7 @@ export function useBookStats() {
           `SELECT COUNT(Id) total FROM Account WHERE IsPersonAccount = true AND OwnerId = '${BANKER_USER_ID}'`,
         ),
         soql<{ Id: string; Amount: number | null; StageName: string }>(
-          `SELECT Id, Amount, StageName FROM Opportunity WHERE OwnerId = '${BANKER_USER_ID}' LIMIT 500`,
+          `SELECT Id, Amount, StageName FROM Opportunity WHERE OwnerId = '${BANKER_USER_ID}' AND ${oppFilter} LIMIT 500`,
         ),
         soql<{ Id: string; Status: string; Priority: string }>(
           `SELECT Id, Status, Priority FROM Case WHERE OwnerId = '${BANKER_USER_ID}' LIMIT 500`,
@@ -204,15 +218,17 @@ export interface CustomerEnrichment {
  * Hacemos 2 queries grandes y agrupamos por AccountId.
  */
 export function useCustomersEnrichment(accountIds: string[]) {
+  const vertical = useVerticalStore((s) => s.vertical)
   return useQuery({
-    queryKey: ['banker-customers-enrich', accountIds.join(',')],
+    queryKey: ['banker-customers-enrich', vertical, accountIds.join(',')],
     enabled: accountIds.length > 0,
     queryFn: async () => {
       if (accountIds.length === 0) return new Map<string, CustomerEnrichment>()
       const ids = accountIds.map((id) => `'${id}'`).join(',')
+      const oppFilter = opportunityVerticalFilter(vertical)
       const [oppsRes, casesRes] = await Promise.all([
         soql<{ AccountId: string; Amount: number | null; StageName: string }>(
-          `SELECT AccountId, Amount, StageName FROM Opportunity WHERE AccountId IN (${ids}) LIMIT 1000`,
+          `SELECT AccountId, Amount, StageName FROM Opportunity WHERE AccountId IN (${ids}) AND ${oppFilter} LIMIT 1000`,
         ),
         soql<{ AccountId: string; Status: string; Priority: string }>(
           `SELECT AccountId, Status, Priority FROM Case WHERE AccountId IN (${ids}) LIMIT 1000`,
@@ -252,13 +268,15 @@ export function useCustomersEnrichment(accountIds: string[]) {
  * Todas las oportunidades del banker. Lo usamos para los charts del Sales Cockpit.
  */
 export function useBookOpportunities() {
+  const vertical = useVerticalStore((s) => s.vertical)
   return useQuery({
-    queryKey: ['banker-opportunities', BANKER_USER_ID],
+    queryKey: ['banker-opportunities', BANKER_USER_ID, vertical],
     queryFn: async () => {
+      const oppFilter = opportunityVerticalFilter(vertical)
       const q = `
         SELECT Id, Name, StageName, Amount, CloseDate, Probability, ForecastCategoryName,
                ExpectedRevenue, AccountId, Account.Name
-        FROM Opportunity WHERE OwnerId = '${BANKER_USER_ID}'
+        FROM Opportunity WHERE OwnerId = '${BANKER_USER_ID}' AND ${oppFilter}
         ORDER BY CloseDate ASC LIMIT 500
       `
       const r = await soql<Opportunity & { AccountId: string; Account?: { Name: string } }>(q)

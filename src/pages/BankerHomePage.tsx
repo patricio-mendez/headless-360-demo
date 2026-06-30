@@ -14,11 +14,17 @@ import {
   MapPin,
   AlertCircle,
   BarChart3,
+  FileText,
+  AlertOctagon,
+  CalendarClock,
 } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
 import { MarketStrip } from '@/components/MarketStrip'
 import { useAuthStore } from '@/store/auth'
+import { useVerticalStore } from '@/store/vertical'
+import { getVerticalConfig } from '@/lib/verticalConfig'
+import { useInsuranceStats } from '@/hooks/useInsuranceStats'
 import { StatTile } from '@/components/StatTile'
 import { AgentforceChatPanel } from '@/components/AgentforceChatPanel'
 import {
@@ -63,6 +69,10 @@ export function BankerHomePage() {
   const identity = useAuthStore((s) => s.identity)
   // Toma el primer token del displayName (ej. "Pablo Gomez" → "Pablo"). Si no hay identity todavía, fallback genérico.
   const firstName = identity?.displayName?.trim().split(/\s+/)[0] ?? 'banker'
+  const vertical = useVerticalStore((s) => s.vertical)
+  const verticalCfg = getVerticalConfig(vertical)
+  const insuranceStats = useInsuranceStats()
+  const isInsurance = vertical === 'insurance'
   const customers = useBankerCustomers()
   const customerIds = useMemo(() => (customers.data ?? []).map((c) => c.Id), [customers.data])
   const enrich = useCustomersEnrichment(customerIds)
@@ -93,18 +103,37 @@ export function BankerHomePage() {
           <div className="mx-auto max-w-[1600px] space-y-6 p-6 lg:p-8">
             {/* 1. Welcome banner */}
             <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-6">
-              <div className="absolute inset-0 bg-gradient-to-r from-chart-blue/15 via-chart-violet/10 to-chart-orange/15" />
-              <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-chart-blue/20 blur-3xl" />
+              <div
+                className={cn(
+                  'absolute inset-0',
+                  isInsurance
+                    ? 'bg-gradient-to-r from-chart-coral/15 via-chart-orange/10 to-chart-blue/15'
+                    : 'bg-gradient-to-r from-chart-blue/15 via-chart-violet/10 to-chart-orange/15',
+                )}
+              />
+              <div
+                className={cn(
+                  'absolute -right-12 -top-12 h-48 w-48 rounded-full blur-3xl',
+                  isInsurance ? 'bg-chart-coral/20' : 'bg-chart-blue/20',
+                )}
+              />
               <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-1 lg:max-w-md">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-chart-blue">
-                    Branch Dashboard
+                  <div
+                    className={cn(
+                      'text-[10px] font-semibold uppercase tracking-wider',
+                      isInsurance ? 'text-chart-coral' : 'text-chart-blue',
+                    )}
+                  >
+                    {verticalCfg.dashboardEyebrow}
                   </div>
                   <h1 className="font-display text-3xl font-bold leading-tight">
                     Hola, <span className="gradient-text">{firstName}</span>
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Acá tenés el panorama de tu cartera. Click en cualquier cliente para abrir su vista 360°.
+                    {isInsurance
+                      ? 'Panorama de tu cartera de seguros. Click en cualquier asegurado para abrir su vista 360°.'
+                      : 'Acá tenés el panorama de tu cartera. Click en cualquier cliente para abrir su vista 360°.'}
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 lg:flex-1 lg:flex-row lg:items-stretch lg:justify-end">
@@ -112,16 +141,28 @@ export function BankerHomePage() {
                     <MarketStrip />
                   </div>
                   <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-border bg-card/60 p-4 backdrop-blur-sm">
-                    <Trophy className="h-5 w-5 text-chart-orange" />
+                    {isInsurance ? (
+                      <CalendarClock className="h-5 w-5 text-chart-coral" />
+                    ) : (
+                      <Trophy className="h-5 w-5 text-chart-orange" />
+                    )}
                     <div className="leading-tight">
                       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Closed Won YTD
+                        {isInsurance ? 'Premium anual In Force' : 'Closed Won YTD'}
                       </div>
                       <div className="font-display text-lg font-bold">
-                        {stats.data ? formatCurrency(stats.data.closedWonAmount) : '—'}
+                        {isInsurance
+                          ? insuranceStats.data
+                            ? formatCurrency(insuranceStats.data.premiumAnnual)
+                            : '—'
+                          : stats.data
+                            ? formatCurrency(stats.data.closedWonAmount)
+                            : '—'}
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        {stats.data?.closedWonCount ?? 0} negocios cerrados
+                        {isInsurance
+                          ? `${insuranceStats.data?.policiesInForceCount ?? 0} pólizas vigentes`
+                          : `${stats.data?.closedWonCount ?? 0} negocios cerrados`}
                       </div>
                     </div>
                   </div>
@@ -129,44 +170,91 @@ export function BankerHomePage() {
               </div>
             </section>
 
-            {/* 2. Stats principales del banker */}
+            {/* 2. Stats principales — switch banking/insurance */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <StatTile
-                index={0}
-                label="Mis clientes"
-                value={stats.data ? String(stats.data.totalCustomers) : '—'}
-                hint="Person Accounts asignados"
-                icon={Users}
-                tone="blue"
-                to="/clientes"
-              />
-              <StatTile
-                index={1}
-                label="Pipeline activo"
-                value={stats.data ? formatCurrency(stats.data.totalPipelineAmount) : '—'}
-                hint={`${stats.data?.activeOpportunityCount ?? 0} oportunidades`}
-                icon={TrendingUp}
-                tone="orange"
-                to="/oportunidades"
-              />
-              <StatTile
-                index={2}
-                label="Casos abiertos"
-                value={stats.data ? String(stats.data.openCases) : '—'}
-                hint={`${stats.data?.highPriorityCases ?? 0} alta prioridad`}
-                icon={Headphones}
-                tone="coral"
-                to="/casos"
-              />
-              <StatTile
-                index={3}
-                label="Tareas pendientes"
-                value={stats.data ? String(stats.data.pendingTasks) : '—'}
-                hint={`de ${stats.data?.totalTasks ?? 0} tareas asignadas`}
-                icon={Briefcase}
-                tone="violet"
-                to="/actividades"
-              />
+              {isInsurance ? (
+                <>
+                  <StatTile
+                    index={0}
+                    label="Asegurados"
+                    value={insuranceStats.data ? String(insuranceStats.data.insuredsCount) : '—'}
+                    hint="Personas con póliza vigente"
+                    icon={Users}
+                    tone="blue"
+                    to="/clientes"
+                  />
+                  <StatTile
+                    index={1}
+                    label="Pólizas vigentes"
+                    value={insuranceStats.data ? String(insuranceStats.data.policiesInForceCount) : '—'}
+                    hint={
+                      insuranceStats.data
+                        ? formatCurrency(insuranceStats.data.premiumAnnual) + ' premium anual'
+                        : 'Premium anual'
+                    }
+                    icon={FileText}
+                    tone="orange"
+                    to="/polizas"
+                  />
+                  <StatTile
+                    index={2}
+                    label="Claims activos"
+                    value={insuranceStats.data ? String(insuranceStats.data.activeClaimsCount) : '—'}
+                    hint={`${insuranceStats.data?.highSeverityClaimsCount ?? 0} alta severidad`}
+                    icon={AlertOctagon}
+                    tone="coral"
+                    to="/claims"
+                  />
+                  <StatTile
+                    index={3}
+                    label="Renewals próximos"
+                    value={insuranceStats.data ? String(insuranceStats.data.renewalsNext30dCount) : '—'}
+                    hint="En los próximos 30 días"
+                    icon={CalendarClock}
+                    tone="violet"
+                    to="/polizas"
+                  />
+                </>
+              ) : (
+                <>
+                  <StatTile
+                    index={0}
+                    label="Mis clientes"
+                    value={stats.data ? String(stats.data.totalCustomers) : '—'}
+                    hint="Person Accounts asignados"
+                    icon={Users}
+                    tone="blue"
+                    to="/clientes"
+                  />
+                  <StatTile
+                    index={1}
+                    label="Pipeline activo"
+                    value={stats.data ? formatCurrency(stats.data.totalPipelineAmount) : '—'}
+                    hint={`${stats.data?.activeOpportunityCount ?? 0} oportunidades`}
+                    icon={TrendingUp}
+                    tone="orange"
+                    to="/oportunidades"
+                  />
+                  <StatTile
+                    index={2}
+                    label="Casos abiertos"
+                    value={stats.data ? String(stats.data.openCases) : '—'}
+                    hint={`${stats.data?.highPriorityCases ?? 0} alta prioridad`}
+                    icon={Headphones}
+                    tone="coral"
+                    to="/casos"
+                  />
+                  <StatTile
+                    index={3}
+                    label="Tareas pendientes"
+                    value={stats.data ? String(stats.data.pendingTasks) : '—'}
+                    hint={`de ${stats.data?.totalTasks ?? 0} tareas asignadas`}
+                    icon={Briefcase}
+                    tone="violet"
+                    to="/actividades"
+                  />
+                </>
+              )}
             </div>
 
             {/* 3. Sales Cockpit header + summary strip */}

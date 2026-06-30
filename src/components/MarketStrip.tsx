@@ -1,36 +1,40 @@
-import { TrendingUp, TrendingDown, Minus, Globe, Loader2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, Globe, Shield, Percent, Loader2 } from 'lucide-react'
 import { useCountryStore } from '@/store/country'
-import { useMarketData, type MarketQuote } from '@/hooks/useMarketData'
-import { COUNTRY_MARKETS, GLOBAL_MARKET } from '@/lib/marketTickers'
+import { useVerticalStore } from '@/store/vertical'
+import { useMarketData, getBlocksFor, type MarketQuote } from '@/hooks/useMarketData'
+import { COUNTRY_MARKETS } from '@/lib/marketTickers'
 import { cn } from '@/lib/utils'
 
 /**
- * Strip de 2 tiles del mismo tamaño que el "Closed Won YTD" — uno con mercado
- * local (varía por país) y otro con mercado global (fijo S&P + Brent + BTC).
- *
+ * Strip de 2 tiles del mismo tamaño que el "Closed Won YTD".
+ * Contenido depende del vertical:
+ *  - Banking: Mercado local (por país) + Mercado global (S&P/Brent/BTC).
+ *  - Insurance: Industria seguros (KIE/BRK-B/AIG) + Tasas (10Y/30Y/Oro).
  * Datos vía Yahoo Finance proxy en el Worker BFF. Cache 5 min.
  */
 export function MarketStrip() {
+  const vertical = useVerticalStore((s) => s.vertical)
   const country = useCountryStore((s) => s.country)
-  const { data, isLoading, isError } = useMarketData(country)
-  const localDef = COUNTRY_MARKETS[country].local
-  const globalDef = GLOBAL_MARKET
+  const { data, isLoading, isError } = useMarketData(vertical, country)
+  const blocks = getBlocksFor(vertical, country)
+  const isInsurance = vertical === 'insurance'
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
       <MarketTile
-        label={localDef.label}
-        flag={COUNTRY_MARKETS[country].flag}
-        tickers={localDef.tickers}
-        quotes={data?.local}
+        label={blocks.tile1.label}
+        flag={isInsurance ? undefined : COUNTRY_MARKETS[country].flag}
+        icon={isInsurance ? Shield : undefined}
+        tickers={blocks.tile1.tickers}
+        quotes={data?.tile1}
         isLoading={isLoading}
         isError={isError}
       />
       <MarketTile
-        label={globalDef.label}
-        icon={Globe}
-        tickers={globalDef.tickers}
-        quotes={data?.global}
+        label={blocks.tile2.label}
+        icon={isInsurance ? Percent : Globe}
+        tickers={blocks.tile2.tickers}
+        quotes={data?.tile2}
         isLoading={isLoading}
         isError={isError}
       />

@@ -6,6 +6,8 @@ import { StatTile } from '@/components/StatTile'
 import { ProfileHeader } from '@/components/ProfileHeader'
 import { OpportunitiesPanel } from '@/components/OpportunitiesPanel'
 import { FinancialAccountsPanel } from '@/components/FinancialAccountsPanel'
+import { InsurancePoliciesPanel } from '@/components/InsurancePoliciesPanel'
+import { useVerticalStore } from '@/store/vertical'
 import { CasesPanel } from '@/components/CasesPanel'
 import { ActivitiesPanel } from '@/components/ActivitiesPanel'
 import { ActivitiesTimeline } from '@/components/ActivitiesTimeline'
@@ -19,6 +21,8 @@ import {
 import { formatCurrency } from '@/lib/utils'
 
 export function DashboardPage() {
+  const vertical = useVerticalStore((s) => s.vertical)
+  const isInsurance = vertical === 'insurance'
   const { data: opps = [] } = useOpportunities()
   const { data: fas = [] } = useFinancialAccounts()
   const { data: cases = [] } = useCases()
@@ -98,7 +102,7 @@ export function DashboardPage() {
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <OpportunitiesPanel />
-              <FinancialAccountsPanel />
+              {isInsurance ? <InsurancePoliciesPanel /> : <FinancialAccountsPanel />}
             </div>
 
             <ActivitiesTimeline />

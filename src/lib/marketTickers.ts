@@ -33,6 +33,32 @@ const GLOBAL_BLOCK: MarketBlock = {
   ],
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+ * INSURANCE MARKETS — los dos tiles del modo Insurance.
+ * Tile 1: peers de la industria (ETF + reaseguradora + carrier US).
+ * Tile 2: tasas + commodity refugio (drivers del balance sheet asegurador).
+ * Estos NO dependen del país seleccionado — la industria de seguros se piensa
+ * globalmente (reaseguro internacional + tasas de referencia US).
+ * ──────────────────────────────────────────────────────────────────── */
+
+export const INSURANCE_INDUSTRY_BLOCK: MarketBlock = {
+  label: 'Industria seguros',
+  tickers: [
+    { symbol: 'KIE', display: 'S&P Insurance', isCurrency: true },
+    { symbol: 'BRK-B', display: 'Berkshire', isCurrency: true },
+    { symbol: 'AIG', display: 'AIG', isCurrency: true },
+  ],
+}
+
+export const INSURANCE_RATES_BLOCK: MarketBlock = {
+  label: 'Tasas de referencia',
+  tickers: [
+    { symbol: '^TNX', display: '10Y Treasury', isCurrency: true },
+    { symbol: '^TYX', display: '30Y Treasury', isCurrency: true },
+    { symbol: 'GC=F', display: 'Oro', isCurrency: true },
+  ],
+}
+
 export const COUNTRY_MARKETS: Record<CountryCode, CountryMarket> = {
   CL: {
     flag: '🇨🇱',

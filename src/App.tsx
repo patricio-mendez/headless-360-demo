@@ -7,6 +7,8 @@ import { CustomersListPage } from '@/pages/CustomersListPage'
 import { OpportunitiesListPage } from '@/pages/OpportunitiesListPage'
 import { CasesListPage } from '@/pages/CasesListPage'
 import { ActivitiesPage } from '@/pages/ActivitiesPage'
+import { PoliciesListPage } from '@/pages/PoliciesListPage'
+import { ClaimsListPage } from '@/pages/ClaimsListPage'
 import { ToastViewport } from '@/components/Toast'
 import { useAuthStore } from '@/store/auth'
 
@@ -67,6 +69,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ActivitiesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/polizas"
+          element={
+            <ProtectedRoute>
+              <PoliciesListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/claims"
+          element={
+            <ProtectedRoute>
+              <ClaimsListPage />
             </ProtectedRoute>
           }
         />

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { soql } from '@/lib/sfClient'
 import { env } from '@/lib/env'
+import { useVerticalStore } from '@/store/vertical'
 import type {
   Case,
   Event,
@@ -11,6 +12,8 @@ import type {
   PersonAccount,
   Task,
 } from '@/types/salesforce'
+
+const INSURANCE_OPP_PREFIX = 'Cotización Seguro'
 
 /** Lookup individual de una Opportunity por Id — usado al clickear cards del agente. */
 export function useOpportunityById(id: string | null) {
@@ -113,14 +116,19 @@ export function useAccount() {
 
 export function useOpportunities() {
   const accountId = useCurrentAccountId()
+  const vertical = useVerticalStore((s) => s.vertical)
   return useQuery({
-    queryKey: ['opportunities', accountId],
+    queryKey: ['opportunities', accountId, vertical],
     queryFn: async () => {
+      const filter =
+        vertical === 'insurance'
+          ? `Name LIKE '${INSURANCE_OPP_PREFIX}%'`
+          : `(NOT Name LIKE '${INSURANCE_OPP_PREFIX}%')`
       const q = `
         SELECT Id, Name, StageName, Amount, CloseDate, Probability, Type,
                NextStep, Description, LeadSource, Owner.Name,
                ExpectedRevenue, ForecastCategoryName, CreatedDate, LastModifiedDate
-        FROM Opportunity WHERE AccountId = '${accountId}'
+        FROM Opportunity WHERE AccountId = '${accountId}' AND ${filter}
         ORDER BY CloseDate DESC LIMIT 50
       `
       const r = await soql<Opportunity>(q)
