@@ -18,15 +18,21 @@ const STATUS_FILTERS = [
 type StatusFilter = (typeof STATUS_FILTERS)[number]['key']
 
 /** Filtros por tipo de ramo. Cada `match` agrupa los PolicyType del org bajo un label. */
-const TYPE_FILTERS = [
-  { key: 'all', label: 'Todos los ramos', emoji: '', match: null as string[] | null },
+interface TypeFilterDef {
+  key: 'all' | 'auto' | 'home' | 'health' | 'life'
+  label: string
+  emoji: string
+  match: string[] | null
+}
+const TYPE_FILTERS: TypeFilterDef[] = [
+  { key: 'all', label: 'Todos los ramos', emoji: '', match: null },
   { key: 'auto', label: 'Auto', emoji: '🚗', match: ['Auto'] },
   { key: 'home', label: 'Hogar', emoji: '🏠', match: ['Home'] },
   { key: 'health', label: 'Salud', emoji: '🩺', match: ['Health & Dental', 'Health'] },
   { key: 'life', label: 'Vida', emoji: '❤️', match: ['Life'] },
-] as const
+]
 
-type TypeFilter = (typeof TYPE_FILTERS)[number]['key']
+type TypeFilter = TypeFilterDef['key']
 
 const STATUS_TONES: Record<string, string> = {
   'In Force': 'bg-chart-mint/15 text-chart-mint',
