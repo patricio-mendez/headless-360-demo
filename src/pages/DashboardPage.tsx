@@ -9,6 +9,7 @@ import { FinancialAccountsPanel } from '@/components/FinancialAccountsPanel'
 import { InsurancePoliciesPanel } from '@/components/InsurancePoliciesPanel'
 import { useVerticalStore } from '@/store/vertical'
 import { CasesPanel } from '@/components/CasesPanel'
+import { ClaimsPanel } from '@/components/ClaimsPanel'
 import { ActivitiesPanel } from '@/components/ActivitiesPanel'
 import { ActivitiesTimeline } from '@/components/ActivitiesTimeline'
 import { AgentforceChatPanel } from '@/components/AgentforceChatPanel'
@@ -111,6 +112,8 @@ export function DashboardPage() {
               <CasesPanel />
               <ActivitiesPanel />
             </div>
+
+            {isInsurance && <ClaimsPanel />}
           </div>
         </main>
       </div>

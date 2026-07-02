@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { soql } from '@/lib/sfClient'
+import { useCurrentAccountId } from './useCustomer'
 import type { Claim } from '@/types/insurance'
 
 const CLAIM_FIELDS = `
@@ -23,6 +24,25 @@ export function useAllClaims() {
          FROM Claim
          ORDER BY CreatedDate DESC
          LIMIT 500`,
+      )
+      return r.records
+    },
+  })
+}
+
+/** Claims del cliente actual (vista 360 — vertical Insurance). */
+export function useCustomerClaims() {
+  const accountId = useCurrentAccountId()
+  return useQuery<Claim[]>({
+    queryKey: ['customer-claims', accountId],
+    enabled: !!accountId,
+    queryFn: async () => {
+      const r = await soql<Claim>(
+        `SELECT ${CLAIM_FIELDS}
+         FROM Claim
+         WHERE AccountId = '${accountId}'
+         ORDER BY CreatedDate DESC
+         LIMIT 50`,
       )
       return r.records
     },
