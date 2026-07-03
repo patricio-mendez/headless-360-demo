@@ -15,6 +15,9 @@ export const env = {
   demoAccountId: import.meta.env.VITE_DEMO_ACCOUNT_ID as string,
   agentforceAgentId: import.meta.env.VITE_AGENTFORCE_AGENT_ID as string,
   agentforceAgentName: (import.meta.env.VITE_AGENTFORCE_AGENT_NAME as string) ?? 'Agentforce',
+  // Overrides opcionales para el vertical Insurance (si no se setean, verticalConfig usa defaults).
+  agentforceInsuranceAgentId: import.meta.env.VITE_AGENTFORCE_INSURANCE_AGENT_ID as string | undefined,
+  agentforceInsuranceAgentName: import.meta.env.VITE_AGENTFORCE_INSURANCE_AGENT_NAME as string | undefined,
   redirectUri: `${window.location.origin}${import.meta.env.BASE_URL}oauth/callback`.replace(/\/+oauth/, '/oauth'),
   /**
    * Base URL para llamadas REST (SOQL, ui-api, sobjects).

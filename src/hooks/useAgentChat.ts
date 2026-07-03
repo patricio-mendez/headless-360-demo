@@ -141,7 +141,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return (await res.json()) as T
 }
 
-export function useAgentChat(context?: ChatContext) {
+export function useAgentChat(context?: ChatContext, agentId?: string) {
   const [state, setState] = useState<State>({
     sessionId: null,
     status: 'idle',
@@ -154,6 +154,9 @@ export function useAgentChat(context?: ChatContext) {
   // Mantener el contexto más reciente sin retriggerear `send` (evita stale closures).
   const contextRef = useRef<ChatContext | undefined>(context)
   contextRef.current = context
+  // agentId también por ref: el vertical puede cambiar sin retriggerear `start`.
+  const agentIdRef = useRef<string | undefined>(agentId)
+  agentIdRef.current = agentId
 
   const start = useCallback(async () => {
     if (startedRef.current) return
@@ -163,6 +166,7 @@ export function useAgentChat(context?: ChatContext) {
     try {
       const res = await postJson<SessionResponse>('/api/agent/session', {
         externalSessionKey: `headless360-${Date.now()}`,
+        agentId: agentIdRef.current,
       })
       setState({
         sessionId: res.sessionId,
@@ -269,6 +273,13 @@ export function useAgentChat(context?: ChatContext) {
     retryStart: () => {
       startedRef.current = false
       void start()
+    },
+    /** Descarta la sesión actual y vuelve a idle. Útil al cambiar de vertical/agente. */
+    reset: () => {
+      startedRef.current = false
+      contextSentRef.current = false
+      sequenceRef.current = 0
+      setState({ sessionId: null, status: 'idle', error: null, messages: [] })
     },
   }
 }

@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { Vertical } from '@/store/vertical'
+import { env } from '@/lib/env'
 
 export interface SidebarItem {
   icon: LucideIcon
@@ -36,6 +37,10 @@ export interface VerticalConfig {
   defaultRoute: string
   /** Sidebar nav items in the order they should appear. */
   sidebarItems: SidebarItem[]
+  /** Agentforce Employee Agent (BotDefinition Id) que atiende el chat en este vertical. */
+  agentId: string
+  /** Nombre visible del asistente en el header del chat panel. */
+  agentName: string
 }
 
 export const VERTICAL_CONFIG: Record<Vertical, VerticalConfig> = {
@@ -56,6 +61,9 @@ export const VERTICAL_CONFIG: Record<Vertical, VerticalConfig> = {
       { icon: Headphones, label: 'Casos de Servicio', to: '/casos', matchPath: '/casos' },
       { icon: Calendar, label: 'Actividades', to: '/actividades', matchPath: '/actividades' },
     ],
+    // Banking usa el agente configurado por env (Banker Agentforce por defecto).
+    agentId: env.agentforceAgentId,
+    agentName: env.agentforceAgentName ?? 'Agentforce Asistente Bancario',
   },
   insurance: {
     id: 'insurance',
@@ -74,6 +82,10 @@ export const VERTICAL_CONFIG: Record<Vertical, VerticalConfig> = {
       { icon: AlertOctagon, label: 'Claims', to: '/claims', matchPath: '/claims' },
       { icon: Calendar, label: 'Actividades', to: '/actividades', matchPath: '/actividades' },
     ],
+    // Insurance usa el Employee Agent "Cumulus Seguros - Asistente Personal".
+    // Override opcional por env (VITE_AGENTFORCE_INSURANCE_AGENT_ID); default = BotId del agente de seguros.
+    agentId: env.agentforceInsuranceAgentId ?? '0Xxg7000000pyF3CAI',
+    agentName: env.agentforceInsuranceAgentName ?? 'Agentforce Asistente de Seguros',
   },
 }
 

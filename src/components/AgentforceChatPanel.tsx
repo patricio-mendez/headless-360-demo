@@ -33,6 +33,8 @@ import {
   useTaskById,
 } from '@/hooks/useCustomer'
 import { env } from '@/lib/env'
+import { useVerticalStore } from '@/store/vertical'
+import { getVerticalConfig } from '@/lib/verticalConfig'
 import { DataTooltip } from './Tooltip'
 import { OpportunityDetailDrawer } from './OpportunityDetailDrawer'
 import { CaseDetailDrawer } from './CaseDetailDrawer'
@@ -117,6 +119,10 @@ export function AgentforceChatPanel() {
   const accountId = useCurrentAccountId()
   const { data: account } = useAccount()
 
+  // Vertical activo (banking / insurance) → determina qué Employee Agent atiende el chat.
+  const vertical = useVerticalStore((s) => s.vertical)
+  const verticalCfg = getVerticalConfig(vertical)
+
   const context: ChatContext = {
     bankerName: identity?.displayName,
     bankerEmail: identity?.email,
@@ -125,7 +131,17 @@ export function AgentforceChatPanel() {
     customerName: inCustomerView ? (account?.Name ?? undefined) : undefined,
   }
 
-  const chat = useAgentChat(context)
+  const chat = useAgentChat(context, verticalCfg.agentId)
+
+  // Al cambiar de vertical (banking <-> insurance) descartamos la sesión actual
+  // para que la próxima apertura arranque con el Employee Agent correcto.
+  const prevAgentIdRef = useRef(verticalCfg.agentId)
+  useEffect(() => {
+    if (prevAgentIdRef.current !== verticalCfg.agentId) {
+      prevAgentIdRef.current = verticalCfg.agentId
+      chat.reset()
+    }
+  }, [verticalCfg.agentId, chat])
 
   // Lazy start: solo cuando el usuario abre el chat por primera vez.
   useEffect(() => {
@@ -149,6 +165,7 @@ export function AgentforceChatPanel() {
         onClose={() => setOpen(false)}
         chat={chat}
         onOpenRecord={handleOpenRecord}
+        agentName={verticalCfg.agentName}
       />
       <RecordDetailHost detailRef={detailRef} onClose={() => setDetailRef(null)} />
     </>
@@ -261,11 +278,13 @@ function ChatDrawer({
   onClose,
   chat,
   onOpenRecord,
+  agentName,
 }: {
   open: boolean
   onClose: () => void
   chat: ReturnType<typeof useAgentChat>
   onOpenRecord: (apiName: string, id: string) => void
+  agentName: string
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [draft, setDraft] = useState('')
@@ -293,7 +312,7 @@ function ChatDrawer({
 
   return (
     <div className="fixed bottom-6 left-6 z-[55] flex h-[640px] max-h-[calc(100vh-3rem)] w-[440px] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/40 data-[state=open]:animate-slide-up">
-      <Header status={chat.status} onClose={onClose} onRetry={chat.retryStart} />
+      <Header status={chat.status} onClose={onClose} onRetry={chat.retryStart} agentName={agentName} />
 
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto scrollbar-thin px-4 py-4">
         {chat.status === 'starting' && chat.messages.length === 0 && <ConnectingState />}
@@ -327,10 +346,12 @@ function Header({
   status,
   onClose,
   onRetry,
+  agentName,
 }: {
   status: ReturnType<typeof useAgentChat>['status']
   onClose: () => void
   onRetry: () => void
+  agentName: string
 }) {
   return (
     <div className="relative shrink-0 overflow-hidden border-b border-border">
@@ -344,7 +365,7 @@ function Header({
         </div>
 
         <div className="min-w-0 flex-1 leading-tight">
-          <div className="truncate font-display text-sm font-semibold">Agentforce Asistente Bancario</div>
+          <div className="truncate font-display text-sm font-semibold">{agentName}</div>
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             <DataTooltip
               title="Powered by Agentforce Agent API"
@@ -715,7 +736,7 @@ function ConnectingState() {
     <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
       <Loader2 className="h-6 w-6 animate-spin text-chart-blue" />
       <div className="space-y-1">
-        <div className="text-sm font-medium">Conectando con Banker Agentforce</div>
+        <div className="text-sm font-medium">Conectando con el Agente Asistente</div>
         <div className="text-xs text-muted-foreground">BFF Worker → Agent Runtime API</div>
       </div>
     </div>
