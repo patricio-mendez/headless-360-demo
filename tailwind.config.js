@@ -15,6 +15,22 @@ export default {
     'text-chart-coral',
     'text-chart-cyan',
     'text-chart-violet',
+    // SVG fill/stroke — generadas dinámicamente vía .replace('bg-','fill-'/'stroke-')
+    // en las curvas/timelines; sin safelist Tailwind no las compila (caen a negro).
+    'fill-chart-blue',
+    'fill-chart-orange',
+    'fill-chart-mint',
+    'fill-chart-coral',
+    'fill-chart-cyan',
+    'fill-chart-violet',
+    'fill-muted-foreground/40',
+    'stroke-muted-foreground/40',
+    'stroke-chart-blue',
+    'stroke-chart-orange',
+    'stroke-chart-mint',
+    'stroke-chart-coral',
+    'stroke-chart-cyan',
+    'stroke-chart-violet',
   ],
   theme: {
     container: {
@@ -137,6 +153,21 @@ export default {
           '0%, 100%': { transform: 'scale(1)', opacity: '0.6' },
           '50%': { transform: 'scale(1.6)', opacity: '0' },
         },
+        // Traza de un path SVG: se "dibuja" de inicio a fin (requiere stroke-dasharray inline).
+        'draw-path': {
+          from: { strokeDashoffset: 'var(--path-len, 1000)' },
+          to: { strokeDashoffset: '0' },
+        },
+        // Área bajo la curva: fade + slide sutil hacia arriba.
+        'area-rise': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        // Halo de selección: pulso continuo suave (glow que respira).
+        'select-pulse': {
+          '0%, 100%': { opacity: '0.15', transform: 'scale(1)' },
+          '50%': { opacity: '0.35', transform: 'scale(1.15)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.3s ease-out',
@@ -149,6 +180,9 @@ export default {
         'line-draw': 'line-draw 0.6s ease-out both',
         'line-draw-x': 'line-draw-x 0.7s ease-out both',
         'marker-ring': 'marker-ring 2.4s ease-in-out infinite',
+        'draw-path': 'draw-path 1.1s ease-out both',
+        'area-rise': 'area-rise 0.8s ease-out 0.4s both',
+        'select-pulse': 'select-pulse 1.8s ease-in-out infinite',
       },
     },
   },
