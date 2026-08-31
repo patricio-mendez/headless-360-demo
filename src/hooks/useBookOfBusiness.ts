@@ -1,18 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { soql } from '@/lib/sfClient'
 import type { Opportunity } from '@/types/salesforce'
-import { useVerticalStore, type Vertical } from '@/store/vertical'
-
-/**
- * Filtro SOQL para separar opps de banking de opps de insurance.
- * Convención: las opps de insurance tienen Name LIKE 'Cotización Seguro%'.
- * Las de banking son el resto (créditos, hipotecas, inversiones, etc).
- */
-const INSURANCE_OPP_PREFIX = 'Cotización Seguro'
-function opportunityVerticalFilter(vertical: Vertical): string {
-  if (vertical === 'insurance') return `Name LIKE '${INSURANCE_OPP_PREFIX}%'`
-  return `(NOT Name LIKE '${INSURANCE_OPP_PREFIX}%')`
-}
+import { useVerticalStore } from '@/store/vertical'
+import { caseVerticalFilter, opportunityVerticalFilter } from '@/lib/verticalFilters'
 
 export interface CustomerListItem {
   Id: string
@@ -65,11 +55,13 @@ export interface AlertItem {
  * Limita a top N por tipo para evitar listas explosivas.
  */
 export function useBookAlerts(limit = 8) {
+  const vertical = useVerticalStore((s) => s.vertical)
   return useQuery({
-    queryKey: ['banker-alerts', BANKER_USER_ID, limit],
+    queryKey: ['banker-alerts', BANKER_USER_ID, vertical, limit],
     staleTime: 60_000,
     queryFn: async (): Promise<AlertItem[]> => {
       const todayIso = new Date().toISOString().slice(0, 10)
+      const caseFilter = caseVerticalFilter(vertical)
       const [casesRes, tasksRes] = await Promise.all([
         soql<{
           Id: string
@@ -83,6 +75,7 @@ export function useBookAlerts(limit = 8) {
           `SELECT Id, CaseNumber, Subject, Priority, CreatedDate, AccountId, Account.Name
            FROM Case
            WHERE Account.OwnerId = '${BANKER_USER_ID}' AND IsClosed = false AND Priority = 'High'
+             AND ${caseFilter}
            ORDER BY CreatedDate DESC LIMIT ${limit}`,
         ),
         soql<{
@@ -161,6 +154,7 @@ export function useBookStats() {
     queryKey: ['banker-stats', BANKER_USER_ID, vertical],
     queryFn: async (): Promise<BookStats> => {
       const oppFilter = opportunityVerticalFilter(vertical)
+      const caseFilter = caseVerticalFilter(vertical)
       // Salesforce no soporta múltiples COUNT/SUM en un solo query con WHERE
       // usando aggregates por SObject distinto. Hacemos 4 queries en paralelo.
       const [accountsRes, oppsRes, casesRes, tasksRes] = await Promise.all([
@@ -171,7 +165,7 @@ export function useBookStats() {
           `SELECT Id, Amount, StageName FROM Opportunity WHERE OwnerId = '${BANKER_USER_ID}' AND ${oppFilter} LIMIT 500`,
         ),
         soql<{ Id: string; Status: string; Priority: string }>(
-          `SELECT Id, Status, Priority FROM Case WHERE OwnerId = '${BANKER_USER_ID}' LIMIT 500`,
+          `SELECT Id, Status, Priority FROM Case WHERE OwnerId = '${BANKER_USER_ID}' AND ${caseFilter} LIMIT 500`,
         ),
         soql<{ Id: string; Status: string }>(
           `SELECT Id, Status FROM Task WHERE OwnerId = '${BANKER_USER_ID}' LIMIT 500`,
@@ -226,12 +220,13 @@ export function useCustomersEnrichment(accountIds: string[]) {
       if (accountIds.length === 0) return new Map<string, CustomerEnrichment>()
       const ids = accountIds.map((id) => `'${id}'`).join(',')
       const oppFilter = opportunityVerticalFilter(vertical)
+      const caseFilter = caseVerticalFilter(vertical)
       const [oppsRes, casesRes] = await Promise.all([
         soql<{ AccountId: string; Amount: number | null; StageName: string }>(
           `SELECT AccountId, Amount, StageName FROM Opportunity WHERE AccountId IN (${ids}) AND ${oppFilter} LIMIT 1000`,
         ),
         soql<{ AccountId: string; Status: string; Priority: string }>(
-          `SELECT AccountId, Status, Priority FROM Case WHERE AccountId IN (${ids}) LIMIT 1000`,
+          `SELECT AccountId, Status, Priority FROM Case WHERE AccountId IN (${ids}) AND ${caseFilter} LIMIT 1000`,
         ),
       ])
 
@@ -349,14 +344,16 @@ export interface BookCase {
 }
 
 export function useBookCases() {
+  const vertical = useVerticalStore((s) => s.vertical)
   return useQuery({
-    queryKey: ['banker-cases', BANKER_USER_ID],
+    queryKey: ['banker-cases', BANKER_USER_ID, vertical],
     queryFn: async () => {
+      const caseFilter = caseVerticalFilter(vertical)
       const q = `
         SELECT Id, CaseNumber, Subject, Status, Priority, IsClosed, CreatedDate,
                AccountId, Account.Name
         FROM Case
-        WHERE Account.OwnerId = '${BANKER_USER_ID}'
+        WHERE Account.OwnerId = '${BANKER_USER_ID}' AND ${caseFilter}
         ORDER BY CreatedDate DESC LIMIT 500
       `
       const r = await soql<BookCase>(q)

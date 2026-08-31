@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { soql } from '@/lib/sfClient'
 import { env } from '@/lib/env'
 import { useVerticalStore } from '@/store/vertical'
+import { caseVerticalFilter, opportunityVerticalFilter } from '@/lib/verticalFilters'
 import type {
   Case,
   Event,
@@ -12,8 +13,6 @@ import type {
   PersonAccount,
   Task,
 } from '@/types/salesforce'
-
-const INSURANCE_OPP_PREFIX = 'Cotización Seguro'
 
 /** Lookup individual de una Opportunity por Id — usado al clickear cards del agente. */
 export function useOpportunityById(id: string | null) {
@@ -122,10 +121,7 @@ export function useOpportunities() {
   return useQuery({
     queryKey: ['opportunities', accountId, vertical],
     queryFn: async () => {
-      const filter =
-        vertical === 'insurance'
-          ? `Name LIKE '${INSURANCE_OPP_PREFIX}%'`
-          : `(NOT Name LIKE '${INSURANCE_OPP_PREFIX}%')`
+      const filter = opportunityVerticalFilter(vertical)
       const q = `
         SELECT Id, Name, StageName, Amount, CloseDate, Probability, Type,
                NextStep, Description, LeadSource, Owner.Name,
@@ -159,14 +155,16 @@ export function useFinancialAccounts() {
 
 export function useCases() {
   const accountId = useCurrentAccountId()
+  const vertical = useVerticalStore((s) => s.vertical)
   return useQuery({
-    queryKey: ['cases', accountId],
+    queryKey: ['cases', accountId, vertical],
     queryFn: async () => {
+      const caseFilter = caseVerticalFilter(vertical)
       const q = `
         SELECT Id, CaseNumber, Subject, Status, Priority, Type, Reason, Origin,
                Description, ContactId, Contact.Name, Owner.Name, IsEscalated,
                CreatedDate, ClosedDate, LastModifiedDate
-        FROM Case WHERE AccountId = '${accountId}'
+        FROM Case WHERE AccountId = '${accountId}' AND ${caseFilter}
         ORDER BY CreatedDate DESC LIMIT 30
       `
       const r = await soql<Case>(q)

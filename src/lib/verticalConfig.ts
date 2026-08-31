@@ -80,6 +80,7 @@ export const VERTICAL_CONFIG: Record<Vertical, VerticalConfig> = {
       { icon: Users, label: 'Asegurados', to: '/clientes', matchPath: '/clientes' },
       { icon: FileText, label: 'Pólizas', to: '/polizas', matchPath: '/polizas' },
       { icon: AlertOctagon, label: 'Claims', to: '/claims', matchPath: '/claims' },
+      { icon: Headphones, label: 'Casos de Servicio', to: '/casos', matchPath: '/casos' },
       { icon: Calendar, label: 'Actividades', to: '/actividades', matchPath: '/actividades' },
     ],
     // Insurance usa el Employee Agent "Cumulus Seguros - Asistente Personal".
