@@ -129,6 +129,7 @@ export function AgentforceChatPanel() {
     bankerUsername: identity?.username,
     customerAccountId: inCustomerView ? accountId : undefined,
     customerName: inCustomerView ? (account?.Name ?? undefined) : undefined,
+    vertical,
   }
 
   const chat = useAgentChat(context, verticalCfg.agentId)

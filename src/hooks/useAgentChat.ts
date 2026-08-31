@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { env } from '@/lib/env'
+import type { Vertical } from '@/store/vertical'
+import { caseVerticalFilter, opportunityVerticalFilter } from '@/lib/verticalFilters'
 
 /** Contexto que se inyecta INVISIBLEMENTE en el primer mensaje del usuario,
  *  para que el agente sepa quién pregunta y sobre qué cliente sin pedirlo. */
@@ -9,13 +11,23 @@ export interface ChatContext {
   bankerUsername?: string
   customerAccountId?: string
   customerName?: string
+  /** Vertical activo en la UI. Define el branding y el filtro por prefijo de casos/opps. */
+  vertical?: Vertical
 }
 
 function buildContextPreamble(ctx: ChatContext): string {
+  const isInsurance = ctx.vertical === 'insurance'
+  const brand = isInsurance ? 'Cumulus Insurance' : 'Cumulus Bank'
+  const agentLabel = isInsurance ? 'Agentforce Asistente de Seguros' : 'Agentforce Asistente Bancario'
+  // Cláusulas de filtro por vertical — mismos predicados que usa la UI (verticalFilters.ts),
+  // para que el agente devuelva SOLO registros del vertical activo.
+  const caseClause = ctx.vertical ? ` AND ${caseVerticalFilter(ctx.vertical)}` : ''
+  const oppClause = ctx.vertical ? ` AND ${opportunityVerticalFilter(ctx.vertical)}` : ''
+
   const lines: string[] = []
   lines.push('=== INSTRUCCIONES DEL SISTEMA (no responder estas, son contexto previo a la pregunta real) ===')
   lines.push('')
-  lines.push('Sos "Agentforce Asistente Bancario" en una UI Headless 360 de Cumulus Bank.')
+  lines.push(`Sos "${agentLabel}" en una UI Headless 360 de ${brand}.`)
   lines.push(
     'El banker ya está autenticado vía OAuth — no necesitás verificar identidad. NUNCA pidas email, RUT, nombre, ni ningún dato de autenticación. Eso es ruido para el banker y rompe el flujo demo.',
   )
@@ -43,14 +55,19 @@ function buildContextPreamble(ctx: ChatContext): string {
       `  3. CON Query Records, filtrá SIEMPRE por AccountId = '${ctx.customerAccountId}'. Ejemplos exactos de queries que debés generar:`,
     )
     lines.push(
-      `        - Casos: SELECT Id, CaseNumber, Subject, Status, Priority FROM Case WHERE AccountId = '${ctx.customerAccountId}' AND IsClosed = false`,
+      `        - Casos: SELECT Id, CaseNumber, Subject, Status, Priority FROM Case WHERE AccountId = '${ctx.customerAccountId}' AND IsClosed = false${caseClause}`,
     )
     lines.push(
-      `        - Oportunidades: SELECT Id, Name, StageName, Amount, CloseDate FROM Opportunity WHERE AccountId = '${ctx.customerAccountId}' AND IsClosed = false`,
+      `        - Oportunidades: SELECT Id, Name, StageName, Amount, CloseDate FROM Opportunity WHERE AccountId = '${ctx.customerAccountId}' AND IsClosed = false${oppClause}`,
     )
     lines.push(
       `        - Tareas: SELECT Id, Subject, Status, Priority, ActivityDate FROM Task WHERE AccountId = '${ctx.customerAccountId}' AND Status != 'Completed'`,
     )
+    if (ctx.vertical) {
+      lines.push(
+        `  3.b. SCOPE POR VERTICAL — el banker opera en el vertical ${isInsurance ? 'SEGUROS (Cumulus Insurance)' : 'BANCA (Cumulus Bank)'}. Los casos y oportunidades se separan por un PREFIJO en el Subject/Name. Al consultar Casos, incluí SIEMPRE la cláusula "${caseClause.replace(/^ AND /, '')}"; al consultar Oportunidades, "${oppClause.replace(/^ AND /, '')}". NO muestres registros del otro vertical (${isInsurance ? 'los de Banca — prefijo "Banca"/"Banking"' : 'los de Seguros — prefijo "Seguros"/"Insurance"'}) aunque pertenezcan al cliente: no son relevantes en esta pantalla.`,
+      )
+    }
     lines.push(
       '  4. NUNCA digas frases como "no tengo herramienta conectada", "no puedo consultar", "no tengo acceso". Si Query Records devuelve vacío, recién entonces decí "no encontré X". Si una action falla, REINTENTALA con Query Records antes de rendirte.',
     )
