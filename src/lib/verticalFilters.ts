@@ -14,21 +14,18 @@ export function opportunityVerticalFilter(vertical: Vertical): string {
 }
 
 /**
- * Casos de insurance: los que arrancan con "Insurance" o "Seguros". Es una convención de
- * prefijo en el Subject — al crear casos nuevos con ese prefijo, pueblan la vista de Seguros.
+ * Casos por vertical: convención de PREFIJO en el Subject, simétrica entre ambos verticales.
+ * Al crear casos nuevos con el prefijo correspondiente, pueblan solos la vista del vertical.
+ *   - Seguros: "Seguros - ..." o "Insurance - ..."
+ *   - Banca:   "Banca - ..."   o "Banking - ..."
+ * Todo lo que NO arranca con un prefijo (shells de chat/messaging, junk del SDO base, casos
+ * sin subject, etc) queda oculto de AMBOS verticales — son ruido de baja señal.
  */
 const INSURANCE_CASE_PREDICATE =
   "(Subject LIKE 'Insurance%' OR Subject LIKE 'Seguros%')"
-
-/**
- * Casos "shell" auto-generados desde sesiones de chat/messaging ("Consulta de siniestro/póliza…").
- * No aportan detalle (son un log de conversación con menos info que una Messaging Session), así
- * que se ocultan de AMBOS verticales — ni en Seguros ni en Banca tiene sentido mostrarlos.
- */
-const CHAT_SHELL_PREDICATE = "(Subject LIKE 'Consulta de siniestro/póliza%')"
+const BANKING_CASE_PREDICATE =
+  "(Subject LIKE 'Banca%' OR Subject LIKE 'Banking%')"
 
 export function caseVerticalFilter(vertical: Vertical): string {
-  if (vertical === 'insurance') return INSURANCE_CASE_PREDICATE
-  // Banking = todo lo que no es insurance-prefixed y no es un chat-shell de siniestro/póliza.
-  return `(NOT ${INSURANCE_CASE_PREDICATE} AND NOT ${CHAT_SHELL_PREDICATE})`
+  return vertical === 'insurance' ? INSURANCE_CASE_PREDICATE : BANKING_CASE_PREDICATE
 }
