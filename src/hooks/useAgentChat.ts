@@ -85,6 +85,11 @@ function buildContextPreamble(ctx: ChatContext): string {
     lines.push(
       'No hay cliente específico abierto en pantalla — el banker está en la vista Branch Dashboard. Si pregunta por un cliente, podés pedir el nombre o ID. Si pregunta por su cartera/portfolio, dale un panorama general del libro de negocios.',
     )
+    if (ctx.vertical) {
+      lines.push(
+        `SCOPE POR VERTICAL — el banker opera en el vertical ${isInsurance ? 'SEGUROS (Cumulus Insurance)' : 'BANCA (Cumulus Bank)'}. Al consultar Casos u Oportunidades de la cartera, filtrá SIEMPRE por el prefijo del vertical: en Casos agregá la cláusula "${caseClause.replace(/^ AND /, '')}" y en Oportunidades "${oppClause.replace(/^ AND /, '')}". NO mezcles registros del otro vertical (${isInsurance ? 'Banca — prefijo "Banca"/"Banking"' : 'Seguros — prefijo "Seguros"/"Insurance"'}).`,
+      )
+    }
   }
 
   lines.push('')
