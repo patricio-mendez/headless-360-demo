@@ -5,6 +5,8 @@ import { AppShell } from '@/components/AppShell'
 import { PanelLoading, PanelError } from '@/components/PanelStates'
 import { ClaimDetailDrawer } from '@/components/ClaimDetailDrawer'
 import { useAllClaims, useClaimById } from '@/hooks/useClaims'
+import { useAccountParam } from '@/hooks/useAccountParam'
+import { AccountFilterChip } from '@/components/AccountFilterChip'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -43,14 +45,20 @@ const CLAIM_TYPE_ICONS: Record<string, string> = {
 
 export function ClaimsListPage() {
   const { data: claims = [], isLoading, isError, error, refetch } = useAllClaims()
+  const { accountId, clear: clearAccount } = useAccountParam()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<StatusFilter>('open')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { data: selectedClaim } = useClaimById(selectedId)
 
+  const accountName = accountId
+    ? claims.find((c) => c.AccountId === accountId)?.Account?.Name ?? null
+    : null
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return claims.filter((c) => {
+      if (accountId && c.AccountId !== accountId) return false
       if (filter === 'open' && c.IsClosed) return false
       if (filter === 'closed' && !c.IsClosed) return false
       if (filter === 'high' && c.Severity !== 'High') return false
@@ -64,13 +72,14 @@ export function ClaimsListPage() {
       }
       return true
     })
-  }, [claims, search, filter])
+  }, [claims, search, filter, accountId])
 
   const stats = useMemo(() => {
-    const open = claims.filter((c) => !c.IsClosed).length
-    const high = claims.filter((c) => !c.IsClosed && c.Severity === 'High').length
-    return { open, high }
-  }, [claims])
+    const scoped = accountId ? claims.filter((c) => c.AccountId === accountId) : claims
+    const open = scoped.filter((c) => !c.IsClosed).length
+    const high = scoped.filter((c) => !c.IsClosed && c.Severity === 'High').length
+    return { open, high, total: scoped.length }
+  }, [claims, accountId])
 
   return (
     <AppShell>
@@ -83,7 +92,7 @@ export function ClaimsListPage() {
             </div>
             <h1 className="font-display text-3xl font-bold">Claims</h1>
             <p className="text-sm text-muted-foreground">
-              {claims.length} claims · {stats.open} abiertos · {stats.high} de alta severidad
+              {stats.total} claims · {stats.open} abiertos · {stats.high} de alta severidad
             </p>
           </div>
           <div className="relative w-80 max-w-full">
@@ -98,7 +107,7 @@ export function ClaimsListPage() {
           </div>
         </header>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.key}
@@ -113,6 +122,12 @@ export function ClaimsListPage() {
               {f.label}
             </button>
           ))}
+          {accountId && (
+            <>
+              <span className="mx-1 h-4 w-px bg-border" />
+              <AccountFilterChip name={accountName} onClear={clearAccount} />
+            </>
+          )}
         </div>
 
         {isLoading ? (

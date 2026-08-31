@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Calendar, CheckCircle2, Phone, Mail, Clock } from 'lucide-react'
 import { PanelEmpty, PanelError, PanelLoading, InlineSpinner } from './PanelStates'
-import { useTasks, useTaskById } from '@/hooks/useCustomer'
+import { Link } from 'react-router-dom'
+import { useTasks, useTaskById, useCurrentAccountId } from '@/hooks/useCustomer'
 import { TaskDetailDrawer } from './TaskDetailDrawer'
 import { formatDate } from '@/lib/utils'
 
@@ -28,6 +29,7 @@ function kindFromSubject(subject: string): React.ComponentType<{ className?: str
 }
 
 export function ActivitiesPanel() {
+  const accountId = useCurrentAccountId()
   const { data, isLoading, isError, error, refetch, isFetching } = useTasks()
   const tasks = data ?? []
   const pending = tasks.filter((t) => t.Status !== 'Completed').length
@@ -54,7 +56,12 @@ export function ActivitiesPanel() {
             </p>
           </div>
         </div>
-        <button className="text-xs font-medium text-chart-blue hover:underline">Ver todas →</button>
+        <Link
+          to={`/actividades?account=${accountId}`}
+          className="text-xs font-medium text-chart-blue hover:underline"
+        >
+          Ver todas →
+        </Link>
       </div>
       {isLoading ? (
         <PanelLoading rows={4} />

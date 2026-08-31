@@ -4,7 +4,8 @@ import { Progress } from './Progress'
 import { DataTooltip } from './Tooltip'
 import { PanelEmpty, PanelError, PanelLoading, InlineSpinner } from './PanelStates'
 import { OpportunityDetailDrawer } from './OpportunityDetailDrawer'
-import { useOpportunities } from '@/hooks/useCustomer'
+import { Link } from 'react-router-dom'
+import { useOpportunities, useCurrentAccountId } from '@/hooks/useCustomer'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Opportunity } from '@/types/salesforce'
 
@@ -20,6 +21,7 @@ const stageColor: Record<string, string> = {
 }
 
 export function OpportunitiesPanel() {
+  const accountId = useCurrentAccountId()
   const { data, isLoading, isError, error, refetch, isFetching } = useOpportunities()
   const [selected, setSelected] = useState<Opportunity | null>(null)
   const [open, setOpen] = useState(false)
@@ -50,7 +52,12 @@ export function OpportunitiesPanel() {
               </p>
             </div>
           </div>
-          <button className="text-xs font-medium text-chart-blue hover:underline">Ver todas →</button>
+          <Link
+            to={`/oportunidades?account=${accountId}`}
+            className="text-xs font-medium text-chart-blue hover:underline"
+          >
+            Ver todas →
+          </Link>
         </div>
         {isLoading ? (
           <PanelLoading rows={3} />

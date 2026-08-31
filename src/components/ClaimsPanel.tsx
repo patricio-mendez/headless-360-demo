@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { AlertOctagon, ChevronRight, AlertTriangle } from 'lucide-react'
 import { PanelEmpty, PanelError, PanelLoading, InlineSpinner } from './PanelStates'
 import { ClaimDetailDrawer } from './ClaimDetailDrawer'
+import { Link } from 'react-router-dom'
 import { useCustomerClaims } from '@/hooks/useClaims'
+import { useCurrentAccountId } from '@/hooks/useCustomer'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import type { Claim } from '@/types/insurance'
@@ -36,6 +38,7 @@ const CLAIM_TYPE_ICONS: Record<string, string> = {
  * Réplica del patrón CasesPanel — cada row abre ClaimDetailDrawer al click.
  */
 export function ClaimsPanel() {
+  const accountId = useCurrentAccountId()
   const { data, isLoading, isError, error, refetch, isFetching } = useCustomerClaims()
   const [selected, setSelected] = useState<Claim | null>(null)
   const [open, setOpen] = useState(false)
@@ -70,7 +73,12 @@ export function ClaimsPanel() {
               </p>
             </div>
           </div>
-          <button className="text-xs font-medium text-chart-blue hover:underline">Ver todos →</button>
+          <Link
+            to={`/claims?account=${accountId}`}
+            className="text-xs font-medium text-chart-blue hover:underline"
+          >
+            Ver todos →
+          </Link>
         </div>
         {isLoading ? (
           <PanelLoading rows={4} />

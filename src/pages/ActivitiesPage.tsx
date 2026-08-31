@@ -14,6 +14,8 @@ import { AppShell } from '@/components/AppShell'
 import { PanelLoading, PanelError } from '@/components/PanelStates'
 import { useBookActivities } from '@/hooks/useBookOfBusiness'
 import { useTaskById, useEventById } from '@/hooks/useCustomer'
+import { useAccountParam } from '@/hooks/useAccountParam'
+import { AccountFilterChip } from '@/components/AccountFilterChip'
 import { TaskDetailDrawer } from '@/components/TaskDetailDrawer'
 import { EventDetailDrawer } from '@/components/EventDetailDrawer'
 import { formatDate } from '@/lib/utils'
@@ -43,8 +45,23 @@ const DOW_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
 export function ActivitiesPage() {
   const { data, isLoading, isError, error, refetch } = useBookActivities()
-  const tasks = data?.tasks ?? []
-  const events = data?.events ?? []
+  const { accountId, clear: clearAccount } = useAccountParam()
+  const allTasks = data?.tasks ?? []
+  const allEvents = data?.events ?? []
+  // Acotar al cliente si venimos de un "Ver todas" de la vista 360.
+  const tasks = useMemo(
+    () => (accountId ? allTasks.filter((t) => t.AccountId === accountId) : allTasks),
+    [allTasks, accountId],
+  )
+  const events = useMemo(
+    () => (accountId ? allEvents.filter((e) => e.AccountId === accountId) : allEvents),
+    [allEvents, accountId],
+  )
+  const accountName = accountId
+    ? allTasks.find((t) => t.AccountId === accountId)?.Account?.Name ??
+      allEvents.find((e) => e.AccountId === accountId)?.Account?.Name ??
+      null
+    : null
   const [tab, setTab] = useState<TabKey>('all')
   // Cursor del calendario, comienza en mes actual.
   const [cursor, setCursor] = useState(() => {
@@ -129,6 +146,7 @@ export function ActivitiesPage() {
               {counts.all} actividades · {counts.tasks} tareas · {counts.events} eventos
             </p>
           </div>
+          {accountId && <AccountFilterChip name={accountName} onClear={clearAccount} />}
         </header>
 
         {/* Tabs + toggle "Solo pendientes" */}

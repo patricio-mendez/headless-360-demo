@@ -28,7 +28,6 @@ export function FinancialAccountsPanel() {
               </p>
             </div>
           </div>
-          <button className="text-xs font-medium text-chart-blue hover:underline">Ver todos →</button>
         </div>
 
         {isLoading ? (

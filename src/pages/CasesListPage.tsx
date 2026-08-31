@@ -6,6 +6,8 @@ import { PanelLoading, PanelError } from '@/components/PanelStates'
 import { CaseDetailDrawer } from '@/components/CaseDetailDrawer'
 import { useBookCases } from '@/hooks/useBookOfBusiness'
 import { useCaseById } from '@/hooks/useCustomer'
+import { useAccountParam } from '@/hooks/useAccountParam'
+import { AccountFilterChip } from '@/components/AccountFilterChip'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -26,14 +28,20 @@ const PRIORITY_TONES: Record<string, string> = {
 
 export function CasesListPage() {
   const { data: cases = [], isLoading, isError, error, refetch } = useBookCases()
+  const { accountId, clear: clearAccount } = useAccountParam()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<StatusFilter>('open')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { data: selectedCase } = useCaseById(selectedId)
 
+  const accountName = accountId
+    ? cases.find((c) => c.AccountId === accountId)?.Account?.Name ?? null
+    : null
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return cases.filter((c) => {
+      if (accountId && c.AccountId !== accountId) return false
       if (filter === 'open' && c.IsClosed) return false
       if (filter === 'closed' && !c.IsClosed) return false
       if (filter === 'high' && c.Priority !== 'High') return false
@@ -47,13 +55,14 @@ export function CasesListPage() {
       }
       return true
     })
-  }, [cases, search, filter])
+  }, [cases, search, filter, accountId])
 
   const stats = useMemo(() => {
-    const open = cases.filter((c) => !c.IsClosed).length
-    const high = cases.filter((c) => !c.IsClosed && c.Priority === 'High').length
-    return { open, high }
-  }, [cases])
+    const scoped = accountId ? cases.filter((c) => c.AccountId === accountId) : cases
+    const open = scoped.filter((c) => !c.IsClosed).length
+    const high = scoped.filter((c) => !c.IsClosed && c.Priority === 'High').length
+    return { open, high, total: scoped.length }
+  }, [cases, accountId])
 
   return (
     <AppShell>
@@ -66,7 +75,7 @@ export function CasesListPage() {
             </div>
             <h1 className="font-display text-3xl font-bold">Casos de Servicio</h1>
             <p className="text-sm text-muted-foreground">
-              {stats.open} abiertos · {stats.high} en alta prioridad · {cases.length} totales
+              {stats.open} abiertos · {stats.high} en alta prioridad · {stats.total} totales
             </p>
           </div>
           <div className="relative w-80 max-w-full">
@@ -81,7 +90,7 @@ export function CasesListPage() {
           </div>
         </header>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.key}
@@ -96,6 +105,12 @@ export function CasesListPage() {
               {f.label}
             </button>
           ))}
+          {accountId && (
+            <>
+              <span className="mx-1 h-4 w-px bg-border" />
+              <AccountFilterChip name={accountName} onClear={clearAccount} />
+            </>
+          )}
         </div>
 
         {isLoading ? (

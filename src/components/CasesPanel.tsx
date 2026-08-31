@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Headphones, Globe, MessageCircle, Mail, Phone, FileText, ChevronRight } from 'lucide-react'
 import { PanelEmpty, PanelError, PanelLoading, InlineSpinner } from './PanelStates'
 import { CaseDetailDrawer } from './CaseDetailDrawer'
-import { useCases } from '@/hooks/useCustomer'
+import { Link } from 'react-router-dom'
+import { useCases, useCurrentAccountId } from '@/hooks/useCustomer'
 import { formatDate } from '@/lib/utils'
 import type { Case } from '@/types/salesforce'
 
@@ -26,6 +27,7 @@ const originIcon: Record<string, React.ComponentType<{ className?: string }>> = 
 }
 
 export function CasesPanel() {
+  const accountId = useCurrentAccountId()
   const { data, isLoading, isError, error, refetch, isFetching } = useCases()
   const [selected, setSelected] = useState<Case | null>(null)
   const [open, setOpen] = useState(false)
@@ -53,7 +55,12 @@ export function CasesPanel() {
               </p>
             </div>
           </div>
-          <button className="text-xs font-medium text-chart-blue hover:underline">Ver todos →</button>
+          <Link
+            to={`/casos?account=${accountId}`}
+            className="text-xs font-medium text-chart-blue hover:underline"
+          >
+            Ver todos →
+          </Link>
         </div>
         {isLoading ? (
           <PanelLoading rows={4} />

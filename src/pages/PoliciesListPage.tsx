@@ -5,6 +5,8 @@ import { AppShell } from '@/components/AppShell'
 import { PanelLoading, PanelError } from '@/components/PanelStates'
 import { PolicyDetailDrawer } from '@/components/PolicyDetailDrawer'
 import { useAllPolicies, usePolicyById } from '@/hooks/usePolicies'
+import { useAccountParam } from '@/hooks/useAccountParam'
+import { AccountFilterChip } from '@/components/AccountFilterChip'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -53,17 +55,23 @@ const RENEWAL_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 
 export function PoliciesListPage() {
   const { data: policies = [], isLoading, isError, error, refetch } = useAllPolicies()
+  const { accountId, clear: clearAccount } = useAccountParam()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<StatusFilter>('in_force')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { data: selectedPolicy } = usePolicyById(selectedId)
 
+  const accountName = accountId
+    ? policies.find((p) => p.NameInsuredId === accountId)?.NameInsured?.Name ?? null
+    : null
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     const now = Date.now()
     const typeMatch = TYPE_FILTERS.find((t) => t.key === typeFilter)?.match ?? null
     return policies.filter((p) => {
+      if (accountId && p.NameInsuredId !== accountId) return false
       if (filter === 'in_force' && p.Status !== 'In Force') return false
       if (filter === 'lapsed' && p.Status !== 'Lapsed') return false
       if (filter === 'renewals') {
@@ -82,21 +90,22 @@ export function PoliciesListPage() {
       }
       return true
     })
-  }, [policies, search, filter, typeFilter])
+  }, [policies, search, filter, typeFilter, accountId])
 
   const stats = useMemo(() => {
     const now = Date.now()
-    const inForce = policies.filter((p) => p.Status === 'In Force').length
-    const premium = policies
+    const scoped = accountId ? policies.filter((p) => p.NameInsuredId === accountId) : policies
+    const inForce = scoped.filter((p) => p.Status === 'In Force').length
+    const premium = scoped
       .filter((p) => p.Status === 'In Force')
       .reduce((sum, p) => sum + (p.PremiumAmount ?? 0), 0)
-    const renewals = policies.filter((p) => {
+    const renewals = scoped.filter((p) => {
       if (p.Status !== 'In Force' || !p.ExpirationDate) return false
       const diff = new Date(p.ExpirationDate).getTime() - now
       return diff >= 0 && diff <= RENEWAL_WINDOW_MS
     }).length
-    return { inForce, premium, renewals }
-  }, [policies])
+    return { inForce, premium, renewals, total: scoped.length }
+  }, [policies, accountId])
 
   return (
     <AppShell>
@@ -109,7 +118,7 @@ export function PoliciesListPage() {
             </div>
             <h1 className="font-display text-3xl font-bold">Pólizas</h1>
             <p className="text-sm text-muted-foreground">
-              {policies.length} pólizas · {formatCurrency(stats.premium)} premium anual · {stats.renewals} renewals próximos
+              {stats.total} pólizas · {formatCurrency(stats.premium)} premium anual · {stats.renewals} renewals próximos
             </p>
           </div>
           <div className="relative w-80 max-w-full">
@@ -125,7 +134,7 @@ export function PoliciesListPage() {
         </header>
 
         <div className="space-y-2">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.key}
@@ -140,6 +149,12 @@ export function PoliciesListPage() {
                 {f.label}
               </button>
             ))}
+            {accountId && (
+              <>
+                <span className="mx-1 h-4 w-px bg-border" />
+                <AccountFilterChip name={accountName} onClear={clearAccount} />
+              </>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {TYPE_FILTERS.map((t) => (

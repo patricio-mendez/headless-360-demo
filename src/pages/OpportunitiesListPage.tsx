@@ -6,6 +6,8 @@ import { PanelLoading, PanelError } from '@/components/PanelStates'
 import { OpportunityDetailDrawer } from '@/components/OpportunityDetailDrawer'
 import { useBookOpportunities } from '@/hooks/useBookOfBusiness'
 import { useOpportunityById } from '@/hooks/useCustomer'
+import { useAccountParam } from '@/hooks/useAccountParam'
+import { AccountFilterChip } from '@/components/AccountFilterChip'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -20,14 +22,21 @@ type StageFilter = (typeof STAGE_FILTERS)[number]['key']
 
 export function OpportunitiesListPage() {
   const { data: opps = [], isLoading, isError, error, refetch } = useBookOpportunities()
+  const { accountId, clear: clearAccount } = useAccountParam()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<StageFilter>('open')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { data: selectedOpp } = useOpportunityById(selectedId)
 
+  const accountName = accountId
+    ? opps.find((o) => o.AccountId === accountId)?.Account?.Name ?? null
+    : null
+  const scopedTotal = accountId ? opps.filter((o) => o.AccountId === accountId).length : opps.length
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return opps.filter((o) => {
+      if (accountId && o.AccountId !== accountId) return false
       if (filter === 'open' && o.StageName.startsWith('Closed')) return false
       if (filter === 'closed_won' && o.StageName !== 'Closed Won') return false
       if (filter === 'closed_lost' && o.StageName !== 'Closed Lost') return false
@@ -40,7 +49,7 @@ export function OpportunitiesListPage() {
       }
       return true
     })
-  }, [opps, search, filter])
+  }, [opps, search, filter, accountId])
 
   const totals = useMemo(() => {
     const totalAmount = filtered.reduce((s, o) => s + (o.Amount ?? 0), 0)
@@ -59,7 +68,7 @@ export function OpportunitiesListPage() {
             </div>
             <h1 className="font-display text-3xl font-bold">Oportunidades</h1>
             <p className="text-sm text-muted-foreground">
-              {filtered.length} de {opps.length} · {formatCurrency(totals.totalAmount)} en pipeline ·{' '}
+              {filtered.length} de {scopedTotal} · {formatCurrency(totals.totalAmount)} en pipeline ·{' '}
               {formatCurrency(totals.expected)} expected
             </p>
           </div>
@@ -75,7 +84,7 @@ export function OpportunitiesListPage() {
           </div>
         </header>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {STAGE_FILTERS.map((f) => (
             <button
               key={f.key}
@@ -90,6 +99,12 @@ export function OpportunitiesListPage() {
               {f.label}
             </button>
           ))}
+          {accountId && (
+            <>
+              <span className="mx-1 h-4 w-px bg-border" />
+              <AccountFilterChip name={accountName} onClear={clearAccount} />
+            </>
+          )}
         </div>
 
         {isLoading ? (

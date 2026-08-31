@@ -3,7 +3,9 @@ import { FileText, ChevronRight, Receipt, Calendar } from 'lucide-react'
 import { PanelEmpty, PanelError, PanelLoading, InlineSpinner } from './PanelStates'
 import { PolicyOperationsDrawer } from './PolicyOperationsDrawer'
 import { PolicyDetailDrawer } from './PolicyDetailDrawer'
+import { Link } from 'react-router-dom'
 import { useCustomerPolicies, usePolicyById } from '@/hooks/usePolicies'
+import { useCurrentAccountId } from '@/hooks/useCustomer'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -33,6 +35,7 @@ const POLICY_TYPE_ICONS: Record<string, string> = {
  * de operaciones (Powered by Data Cloud — Cumulus Core Seguros).
  */
 export function InsurancePoliciesPanel() {
+  const accountId = useCurrentAccountId()
   const { data, isLoading, isError, error, refetch, isFetching } = useCustomerPolicies()
   const policies = data ?? []
   const inForce = policies.filter((p) => p.Status === 'In Force')
@@ -56,7 +59,12 @@ export function InsurancePoliciesPanel() {
               </p>
             </div>
           </div>
-          <button className="text-xs font-medium text-chart-blue hover:underline">Ver todas →</button>
+          <Link
+            to={`/polizas?account=${accountId}`}
+            className="text-xs font-medium text-chart-blue hover:underline"
+          >
+            Ver todas →
+          </Link>
         </div>
 
         {isLoading ? (
